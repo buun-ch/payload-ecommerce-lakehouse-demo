@@ -9,6 +9,7 @@ This is a Payload CMS-based ecommerce application built with Next.js 15, featuri
 ## Commands
 
 ### Development
+
 ```bash
 pnpm dev                  # Start development server on http://localhost:3000
 pnpm build               # Build for production
@@ -17,6 +18,7 @@ pnpm dev:prod            # Clean build and start production mode
 ```
 
 ### Testing
+
 ```bash
 pnpm test                # Run all tests (integration + e2e)
 pnpm test:int            # Run integration tests with Vitest
@@ -24,12 +26,14 @@ pnpm test:e2e            # Run e2e tests with Playwright
 ```
 
 ### Code Quality
+
 ```bash
 pnpm lint                # Run ESLint
 pnpm lint:fix            # Fix ESLint issues automatically
 ```
 
 ### Payload CMS
+
 ```bash
 pnpm payload             # Access Payload CLI commands
 pnpm generate:types      # Generate TypeScript types from Payload schema
@@ -37,12 +41,14 @@ pnpm generate:importmap  # Generate import map for Payload
 ```
 
 ### Database (PostgreSQL)
+
 ```bash
 pnpm payload migrate:create  # Create a new database migration
 pnpm payload migrate         # Run pending migrations
 ```
 
 ### Stripe Integration
+
 ```bash
 pnpm stripe-webhooks     # Forward Stripe webhooks to localhost:3000/api/stripe/webhooks
 ```
@@ -131,6 +137,7 @@ Implements role-based access control in `src/access/`:
 ### Rich Text Editor
 
 Uses **Lexical editor** (`@payloadcms/richtext-lexical`) with features:
+
 - Bold, Italic, Underline
 - Ordered/Unordered lists
 - Links (with internal page references)
@@ -195,6 +202,7 @@ When modifying Payload collections/fields:
 ### Environment Variables
 
 Required variables (see `.env.example`):
+
 - `DATABASE_URI` - PostgreSQL connection string
 - `PAYLOAD_SECRET` - Secret key for Payload
 - `NEXT_PUBLIC_SERVER_URL` - Public URL of the application
@@ -223,3 +231,11 @@ Required variables (see `.env.example`):
 - **Jobs Queue**: Scheduled publishing uses Payload jobs queue (cron-based)
 - **Migrations**: Required when deploying with PostgreSQL - never skip migration step
 - **Guest Checkout**: Supported - guests can create orders and access them via order ID + email
+
+## Code Style
+
+- Respect eslint and prettier rules
+- Follow existing style patterns
+- Only write code comments when necessary, as the code should be self-explanatory
+  (Avoid trivial comment for each code block)
+- Write output messages and code comments in English
