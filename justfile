@@ -26,32 +26,33 @@ get-jwt:
     )
     echo "${response}" | jq -r '.token // empty' || echo "${response}"
 
-# Run the payload pipeline script directly
+# Run the dlt pipeline script directly
 [working-directory("data/ingestion")]
-run: check-venv
+run-dlt: check-venv
     #!/bin/bash
     set -euo pipefail
     source .venv/bin/activate
     source .env.local
     python payload_pipeline.py
 
-# Run the payload pipeline script with `op run`
+# Run the dlt pipeline script with `op run`
 [working-directory("data/ingestion")]
-op-run: check-venv
+op-run-dlt: check-venv
     #!/bin/bash
     set -euo pipefail
     source .venv/bin/activate
     op run --env-file=.env.local -- python payload_pipeline.py
 
+# Check if Iceberg tables exist and have data
 [working-directory("data/ingestion")]
-check-tables: check-venv
+check-iceberg-tables: check-venv
     #!/bin/bash
     set -euo pipefail
     source .venv/bin/activate
     op run --env-file=.env.local -- python check_tables.py
 
 # Clear the DLT pipeline state
-clear-pipeline:
+clear-dlt:
     #!/bin/bash
     set -euo pipefail
     echo "Clearing all Payload CMS pipeline states..."
