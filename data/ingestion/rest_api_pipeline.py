@@ -1,8 +1,6 @@
 from typing import Any, Optional
 
 import dlt
-
-# from dlt.common.pendulum import pendulum
 from dlt.common import pendulum
 from dlt.sources.rest_api import (
     rest_api_resources,
