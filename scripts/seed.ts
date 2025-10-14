@@ -41,15 +41,11 @@ const envFiles = [
 for (const file of envFiles) {
   const filePath = path.join(projectDir, file)
   if (existsSync(filePath)) {
-    console.log(`Loading env from: ${file}`)
     dotenv.config({ path: filePath })
   }
 }
 
-// Debug: Check if critical env vars are loaded
-console.log(`PAYLOAD_SECRET: ${process.env.PAYLOAD_SECRET ? '✓ loaded' : '✗ missing'}`)
-console.log(`DATABASE_URI: ${process.env.DATABASE_URI ? '✓ loaded' : '✗ missing'}`)
-
+// Verify critical env vars are loaded
 if (!process.env.PAYLOAD_SECRET) {
   console.error('\nERROR: PAYLOAD_SECRET not found in environment variables')
   console.error('Checked files:', envFiles)
