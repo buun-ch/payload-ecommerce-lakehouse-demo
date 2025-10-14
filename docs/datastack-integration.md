@@ -344,6 +344,7 @@ print(load_info)
 ```
 
 **How it works:**
+
 1. First run: Loads all records where `updatedAt >= 2024-01-01T00:00:00Z`
 2. Subsequent runs: dlt tracks the maximum `updatedAt` value from previous run
 3. Next run: Only loads records updated since last run

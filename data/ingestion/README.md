@@ -28,8 +28,11 @@ PAYLOAD_CMS_URL="http://localhost:3000/api"
 PAYLOAD_CMS_TOKEN=""  # JWT token from Payload CMS (required for protected collections)
 
 # Pipeline Configuration
-WRITE_DISPOSITION="replace"  # "replace" for full refresh, "merge" for incremental
+WRITE_DISPOSITION="replace"  # "replace" for full refresh (default), "merge" for incremental
 # PIPELINE_MODE="debug"      # Uncomment for DuckDB testing
+
+# For incremental loading, set WRITE_DISPOSITION="merge" and optionally configure:
+# INITIAL_TIMESTAMP="2024-01-01T00:00:00Z"  # Used only for first run. Default is fine for most cases.
 ```
 
 #### Using 1Password (op run)
@@ -106,6 +109,7 @@ PIPELINE_MODE=debug just op-run
 |----------|--------|---------|-------------|
 | `PIPELINE_MODE` | `production`, `debug` | `production` | Use `debug` to load to DuckDB for testing |
 | `WRITE_DISPOSITION` | `replace`, `merge`, `append`, `skip` | `replace` | Data write strategy (see below) |
+| `INITIAL_TIMESTAMP` | ISO 8601 timestamp | `2024-01-01T00:00:00Z` | Starting point for **first** incremental run only. Subsequent runs ignore this and use dlt's saved state. |
 
 ### Payload CMS Configuration
 
@@ -131,6 +135,53 @@ PIPELINE_MODE=debug just op-run
 - **`append`**: Simply append new data without deletion
 - **`skip`**: Skip loading if table already exists
 
+### Incremental Loading with `merge` Mode
+
+When using `WRITE_DISPOSITION=merge`, dlt automatically manages incremental loading:
+
+**Initial Run (First Time):**
+
+- Uses `INITIAL_TIMESTAMP` as the starting point (default: `2024-01-01T00:00:00Z`)
+- Loads all records where `updatedAt >= INITIAL_TIMESTAMP`
+- Automatically saves the last `updatedAt` value to pipeline state
+
+**Subsequent Runs (2nd, 3rd, ... times):**
+
+- `INITIAL_TIMESTAMP` is **ignored** (dlt uses saved state instead)
+- Automatically loads only records updated since the last run
+- Continues to update the saved `updatedAt` value
+
+**Key Points:**
+
+- ✅ **No manual tracking required** - dlt manages the state automatically
+- ✅ **Same command every time** - `just op-run` works for all runs
+- ✅ **State persisted** - Stored in `~/.dlt/pipelines/payload_to_iceberg/state/`
+- ⚠️ **Reset when needed** - Run `just clear-pipeline` to start fresh from `INITIAL_TIMESTAMP`
+
+**Production Setup Example:**
+
+For daily incremental loads, update `.env.local`:
+
+```bash
+WRITE_DISPOSITION="merge"  # Enable incremental mode
+# INITIAL_TIMESTAMP="2024-01-01T00:00:00Z"  # Optional: defaults to 2024-01-01
+```
+
+Then run the same command every day (or via cron/Airflow):
+
+```bash
+just op-run  # Day 1: loads all data since INITIAL_TIMESTAMP
+just op-run  # Day 2+: loads only new/updated records
+```
+
+**Development/Testing:**
+
+Keep the default for ad-hoc testing:
+
+```bash
+WRITE_DISPOSITION="replace"  # Full refresh every time (safe for testing)
+```
+
 ## Running the Pipeline
 
 ### With 1Password (Recommended)
@@ -143,6 +194,9 @@ just op-run
 
 # Incremental load
 WRITE_DISPOSITION=merge just op-run
+
+# Incremental load with custom start date
+WRITE_DISPOSITION=merge INITIAL_TIMESTAMP="2025-01-01T00:00:00Z" just op-run
 
 # Debug with DuckDB
 PIPELINE_MODE=debug just op-run
@@ -159,6 +213,9 @@ just run
 # Incremental load
 WRITE_DISPOSITION=merge just run
 
+# Incremental load with custom start date
+WRITE_DISPOSITION=merge INITIAL_TIMESTAMP="2025-01-01T00:00:00Z" just run
+
 # Debug with DuckDB
 PIPELINE_MODE=debug just run
 ```
@@ -171,6 +228,9 @@ python payload_pipeline.py
 
 # Incremental load to Iceberg
 WRITE_DISPOSITION=merge python payload_pipeline.py
+
+# Incremental load with custom start date
+WRITE_DISPOSITION=merge INITIAL_TIMESTAMP="2025-01-01T00:00:00Z" python payload_pipeline.py
 
 # Debug mode with DuckDB
 PIPELINE_MODE=debug python payload_pipeline.py

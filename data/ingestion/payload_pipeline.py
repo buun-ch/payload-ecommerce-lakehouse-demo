@@ -17,39 +17,6 @@ from sources.payload_cms import payload_cms_incremental, payload_cms_source
 TWriteDisposition = Literal["skip", "append", "replace", "merge"]
 
 
-def get_write_disposition(env_value: str) -> TWriteDisposition:
-    """
-    Get and validate write disposition from environment variable.
-
-    Parameters
-    ----------
-    env_value : str
-        The value from environment variable
-
-    Returns
-    -------
-    TWriteDisposition
-        Validated write disposition
-
-    Raises
-    ------
-    ValueError
-        If the value is not a valid write disposition
-    """
-    valid_dispositions: tuple[TWriteDisposition, ...] = (
-        "skip",
-        "append",
-        "replace",
-        "merge",
-    )
-    if env_value not in valid_dispositions:
-        raise ValueError(
-            f"Invalid WRITE_DISPOSITION: {env_value}. "
-            f"Must be one of: {', '.join(valid_dispositions)}"
-        )
-    return cast(TWriteDisposition, env_value)
-
-
 def load() -> LoadInfo:
     """
     Load data from Payload CMS.
@@ -65,6 +32,9 @@ def load() -> LoadInfo:
         Use "debug" to load to DuckDB for testing, "production" for Iceberg
     WRITE_DISPOSITION : {"replace", "merge"}, default "replace"
         "replace" for full refresh, "merge" for incremental updates
+    INITIAL_TIMESTAMP : str, default "2024-01-01T00:00:00Z"
+        ISO 8601 timestamp for starting point of incremental loads (merge mode only).
+        Only used on first run; subsequent runs use last updatedAt value.
     PAYLOAD_CMS_URL : str, default "http://localhost:3000/api"
         Base URL of Payload CMS API
     PAYLOAD_CMS_TOKEN : str, required
@@ -85,8 +55,8 @@ def load() -> LoadInfo:
     >>> PIPELINE_MODE=debug python payload_pipeline.py
     """
     # Read configuration from environment
-    pipeline_mode = os.getenv("PIPELINE_MODE", "production")
-    write_disposition = get_write_disposition(os.getenv("WRITE_DISPOSITION", "replace"))
+    mode = pipeline_mode()
+    write_disposition = get_write_disposition()
 
     # Common configuration
     collections = ["orders", "products", "categories", "variants"]
@@ -94,7 +64,7 @@ def load() -> LoadInfo:
     auth_token = payload_cms_token()
 
     # Debug mode: Load to DuckDB with limited data
-    if pipeline_mode == "debug":
+    if mode == "debug":
         print("=== DEBUG MODE: Loading to DuckDB ===")
         source = payload_cms_source(
             base_url=base_url,
@@ -115,7 +85,6 @@ def load() -> LoadInfo:
         print(load_info)
         return load_info
 
-    # Production mode: Load to Iceberg
     print(
         f"=== PRODUCTION MODE: Loading to Iceberg (write_disposition={write_disposition}) ==="
     )
@@ -129,7 +98,7 @@ def load() -> LoadInfo:
             auth_token=auth_token,
             limit=100,
             depth=2,
-            initial_timestamp="2024-01-01T00:00:00Z",
+            initial_timestamp=initial_timestamp(),
         )
     else:
         print("Using full refresh (replace mode)")
@@ -175,6 +144,70 @@ def payload_cms_token() -> str:
         JWT authentication token, empty string if not set
     """
     return os.getenv("PAYLOAD_CMS_TOKEN", "")
+
+
+def pipeline_mode() -> str:
+    """
+    Get pipeline execution mode from environment.
+
+    Returns
+    -------
+    str
+        Pipeline mode: "production" for Iceberg, "debug" for DuckDB testing
+    """
+    return os.getenv("PIPELINE_MODE", "production")
+
+
+def get_write_disposition() -> TWriteDisposition:
+    """
+    Get and validate write disposition from environment variable.
+
+    Returns
+    -------
+    TWriteDisposition
+        Validated write disposition from WRITE_DISPOSITION environment variable
+
+    Raises
+    ------
+    ValueError
+        If the value is not a valid write disposition
+
+    Notes
+    -----
+    Reads from WRITE_DISPOSITION environment variable, defaults to "replace".
+    Valid values are: skip, append, replace, merge
+    """
+    env_value = os.getenv("WRITE_DISPOSITION", "replace")
+    valid_dispositions: tuple[TWriteDisposition, ...] = (
+        "skip",
+        "append",
+        "replace",
+        "merge",
+    )
+    if env_value not in valid_dispositions:
+        raise ValueError(
+            f"Invalid WRITE_DISPOSITION: {env_value}. "
+            f"Must be one of: {', '.join(valid_dispositions)}"
+        )
+    return cast(TWriteDisposition, env_value)
+
+
+def initial_timestamp() -> str:
+    """
+    Get initial timestamp for incremental loading from environment.
+
+    Returns
+    -------
+    str
+        ISO 8601 timestamp for starting point of incremental loads,
+        defaults to "2024-01-01T00:00:00Z"
+
+    Notes
+    -----
+    This timestamp is only used on the first pipeline run. Subsequent runs
+    will use the last `updatedAt` value from the previous run.
+    """
+    return os.getenv("INITIAL_TIMESTAMP", "2024-01-01T00:00:00Z")
 
 
 if __name__ == "__main__":

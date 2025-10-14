@@ -26,6 +26,15 @@ get-jwt:
     )
     echo "${response}" | jq -r '.token // empty' || echo "${response}"
 
+# Run the payload pipeline script directly
+[working-directory("data/ingestion")]
+run: check-venv
+    #!/bin/bash
+    set -euo pipefail
+    source .venv/bin/activate
+    source .env.local
+    python payload_pipeline.py
+
 # Run the payload pipeline script with `op run`
 [working-directory("data/ingestion")]
 op-run: check-venv
