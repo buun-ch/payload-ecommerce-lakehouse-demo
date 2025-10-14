@@ -10,6 +10,7 @@ import { imageTshirtBlackData } from './image-tshirt-black'
 import { imageTshirtWhiteData } from './image-tshirt-white'
 import { imageHero1Data } from './image-hero-1'
 import { Address, Transaction, VariantOption } from '@/payload-types'
+import { enhancedSeed } from './enhanced-seed'
 
 const collections: CollectionSlug[] = [
   'categories',
@@ -79,7 +80,16 @@ export const seed = async ({
   payload: Payload
   req: PayloadRequest
 }): Promise<void> => {
-  payload.logger.info('Seeding database...')
+  // Check if enhanced seed should be used
+  // Set SEED_MODE=enhanced or SEED_PRESET=small|medium|large to use enhanced seed
+  const useEnhancedSeed = process.env.SEED_MODE === 'enhanced' || process.env.SEED_PRESET
+
+  if (useEnhancedSeed) {
+    payload.logger.info('Using enhanced seed with realistic data distributions...')
+    return enhancedSeed({ payload, req })
+  }
+
+  payload.logger.info('Seeding database with simple demo data...')
 
   // we need to clear the media directory before seeding
   // as well as the collections and globals

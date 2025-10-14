@@ -70,3 +70,11 @@ check-venv:
         echo "Python venv not found. Create it first with 'uv venv'."
         exit 1
     fi
+
+# Seed database with realistic data (medium preset)
+seed preset="medium":
+    pnpm seed:{{ preset }}
+
+# Clear all seeded data from database
+clear-seed:
+    pnpm clear-seed
