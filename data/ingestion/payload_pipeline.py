@@ -59,7 +59,18 @@ def load() -> LoadInfo:
     write_disposition = get_write_disposition()
 
     # Common configuration
-    collections = ["orders", "products", "categories", "variants"]
+    # All ecommerce collections (addresses excluded - inline in orders)
+    collections = [
+        "orders",           # Order records (items → orders__items)
+        "transactions",     # Payment transactions (items → transactions__items)
+        "carts",           # Shopping carts (items → carts__items)
+        "products",        # Product catalog
+        "variants",        # Product variants
+        "categories",      # Product categories
+        "users",           # Customer accounts
+        "variantTypes",    # Variant type definitions (size, color)
+        "variantOptions",  # Variant option values (S, M, L, etc)
+    ]
     base_url = payload_cms_url()
     auth_token = payload_cms_token()
 
