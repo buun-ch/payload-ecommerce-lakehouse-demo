@@ -44,21 +44,27 @@ if (!process.env.PAYLOAD_SECRET || !process.env.DATABASE_URI) {
 
 import type { CollectionSlug, GlobalSlug } from 'payload'
 
+// Delete in reverse dependency order (child → parent)
 const collections: CollectionSlug[] = [
-  'categories',
-  'media',
-  'pages',
-  'products',
-  'forms',
-  'form-submissions',
-  'variants',
-  'variantOptions',
+  // First: Delete child records that reference other collections
+  'transactions', // References orders
+  'orders', // References products, users, addresses
+  'carts', // References products, users
+  'variants', // References products, variantOptions
+  'addresses', // References users (may be referenced by orders, but inline)
+
+  // Second: Delete intermediate records
+  'variantOptions', // References variantTypes
+  'form-submissions', // References forms
+
+  // Third: Delete parent records
+  'products', // May be referenced by above
+  // Note: 'users' will be handled separately to preserve admin users
   'variantTypes',
-  'carts',
-  'transactions',
-  'addresses',
-  'orders',
-  'users',
+  'forms',
+  'categories',
+  'pages',
+  'media',
 ]
 
 const globals: GlobalSlug[] = ['header', 'footer']
@@ -108,22 +114,75 @@ async function clearSeedData() {
     for (const collection of collections) {
       process.stdout.write(`Clearing ${collection}...`)
 
-      const count = await payload.db.deleteMany({
-        collection,
-        req,
-        where: {},
+      try {
+        const result = await payload.db.deleteMany({
+          collection,
+          req,
+          where: {},
+        })
+
+        // deleteMany returns either a number or an object with docs array
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const count = typeof result === 'number' ? result : (result as any)?.docs?.length || 0
+
+        // Also clear versions if enabled
+        if (payload.collections[collection].config.versions) {
+          await payload.db.deleteVersions({
+            collection,
+            req,
+            where: {},
+          })
+        }
+
+        console.log(` ✓ (${count} records)`)
+      } catch (error) {
+        console.log(` ❌ Error: ${error instanceof Error ? error.message : String(error)}`)
+        if (error instanceof Error && error.stack) {
+          console.log(error.stack)
+        }
+      }
+    }
+
+    // Clear users except admins
+    console.log('Clearing non-admin users...')
+    try {
+      // Get all users with admin role
+      const adminUsers = await payload.find({
+        collection: 'users',
+        where: {
+          roles: {
+            equals: 'admin',
+          },
+        },
+        limit: 1000,
       })
 
-      // Also clear versions if enabled
-      if (payload.collections[collection].config.versions) {
-        await payload.db.deleteVersions({
-          collection,
+      const adminUserIds = adminUsers.docs.map((user) => user.id)
+      console.log(`Found ${adminUserIds.length} admin user(s) to preserve`)
+
+      // Delete non-admin users
+      if (adminUserIds.length > 0) {
+        await payload.db.deleteMany({
+          collection: 'users',
+          req,
+          where: {
+            id: {
+              not_in: adminUserIds,
+            },
+          },
+        })
+      } else {
+        // No admins found, delete all users
+        await payload.db.deleteMany({
+          collection: 'users',
           req,
           where: {},
         })
       }
 
-      console.log(` ✓`)
+      console.log('✓ Cleared non-admin users')
+    } catch (error) {
+      console.log('⚠️  Error clearing users:', error instanceof Error ? error.message : 'Unknown error')
     }
 
     console.log('')

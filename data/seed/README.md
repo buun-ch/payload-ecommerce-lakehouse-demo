@@ -108,7 +108,7 @@ SEED_PRESET=medium tsx scripts/seed.ts
 
 ### File Structure
 
-```
+```plain
 src/endpoints/seed/
 ├── enhanced-seed.ts          # Main orchestrator
 ├── presets.ts                # S/M/L volume configurations

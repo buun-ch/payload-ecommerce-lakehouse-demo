@@ -17,27 +17,40 @@
  */
 
 import type { CollectionSlug, GlobalSlug, Payload, PayloadRequest } from 'payload'
+import type { Media } from '@/payload-types'
 import { getPreset, type SeedPreset } from './presets'
 import { generateProducts } from './generators/products'
 import { generateCustomers } from './generators/customers'
 import { generateOrders } from './generators/orders'
 import { generateCarts } from './generators/carts'
+import fs from 'fs'
+import path from 'path'
+import { fileURLToPath } from 'url'
 
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+
+// Delete in reverse dependency order (child → parent)
 const collections: CollectionSlug[] = [
-  'categories',
-  'media',
-  'pages',
-  'products',
-  'forms',
-  'form-submissions',
-  'variants',
-  'variantOptions',
+  // First: Delete child records that reference other collections
+  'transactions', // References orders
+  'orders', // References products, users, addresses
+  'carts', // References products, users
+  'variants', // References products, variantOptions
+  'addresses', // References users (may be referenced by orders, but inline)
+
+  // Second: Delete intermediate records
+  'variantOptions', // References variantTypes
+  'form-submissions', // References forms
+
+  // Third: Delete parent records
+  'products', // May be referenced by above
+  // Note: 'users' will be handled separately to preserve admin users
   'variantTypes',
-  'carts',
-  'transactions',
-  'addresses',
-  'orders',
-  'users',
+  'forms',
+  'categories',
+  'pages',
+  'media',
 ]
 
 const globals: GlobalSlug[] = ['header', 'footer']
@@ -90,13 +103,82 @@ export const enhancedSeed = async ({
 
   // Clear collections
   for (const collection of collections) {
-    await payload.db.deleteMany({ collection, req, where: {} })
-    if (payload.collections[collection].config.versions) {
-      await payload.db.deleteVersions({ collection, req, where: {} })
+    try {
+      await payload.db.deleteMany({ collection, req, where: {} })
+      if (payload.collections[collection].config.versions) {
+        await payload.db.deleteVersions({ collection, req, where: {} })
+      }
+    } catch (error) {
+      payload.logger.warn(
+        `Error clearing ${collection}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      )
     }
   }
 
+  // Clear users except admins
+  try {
+    // Get all users with admin role
+    const adminUsers = await payload.find({
+      collection: 'users',
+      where: {
+        roles: {
+          equals: 'admin',
+        },
+      },
+      limit: 1000,
+    })
+
+    const adminUserIds = adminUsers.docs.map((user) => user.id)
+    payload.logger.info(`Found ${adminUserIds.length} admin user(s) to preserve`)
+
+    // Delete non-admin users
+    if (adminUserIds.length > 0) {
+      await payload.db.deleteMany({
+        collection: 'users',
+        req,
+        where: {
+          id: {
+            not_in: adminUserIds,
+          },
+        },
+      })
+    } else {
+      // No admins found, delete all users
+      await payload.db.deleteMany({
+        collection: 'users',
+        req,
+        where: {},
+      })
+    }
+  } catch (error) {
+    payload.logger.warn('Error clearing users')
+  }
+
+  // Note: users_roles will be automatically cleaned by CASCADE foreign key constraints
+  // No manual cleanup needed
+
   payload.logger.info('✓ Cleared existing data')
+  payload.logger.info('')
+
+  // Upload fallback no-image
+  payload.logger.info('Uploading fallback no-image...')
+  const noImagePath = path.resolve(__dirname, '../../../public/images/no-image.jpg')
+  const noImageBuffer = fs.readFileSync(noImagePath)
+
+  const noImageMedia = (await payload.create({
+    collection: 'media',
+    data: {
+      alt: 'No image available',
+    },
+    file: {
+      data: noImageBuffer,
+      name: 'no-image.jpg',
+      mimetype: 'image/jpeg',
+      size: noImageBuffer.length,
+    },
+  })) as Media
+
+  payload.logger.info('✓ Uploaded fallback no-image')
   payload.logger.info('')
 
   // Create variant types and options
@@ -112,22 +194,22 @@ export const enhancedSeed = async ({
     data: { name: 'color', label: 'Color' },
   })
 
-  const sizeOptions = ['Small', 'Medium', 'Large', 'X-Large']
-  const sizeVariants = await Promise.all(
+  const sizeOptions = ['S', 'M', 'L']
+  const sizeVariantOptions = await Promise.all(
     sizeOptions.map((size) =>
       payload.create({
         collection: 'variantOptions',
         data: {
           label: size,
-          value: size.toLowerCase().replace(/[^a-z0-9]/g, ''),
+          value: size.toLowerCase(),
           variantType: sizeVariantType.id,
         },
       }),
     ),
   )
 
-  const colorOptions = ['Black', 'White', 'Red', 'Blue', 'Green']
-  const colorVariants = await Promise.all(
+  const colorOptions = ['White', 'Black', 'Red', 'Blue', 'Yellow']
+  const colorVariantOptions = await Promise.all(
     colorOptions.map((color) =>
       payload.create({
         collection: 'variantOptions',
@@ -146,21 +228,25 @@ export const enhancedSeed = async ({
   // Create categories
   payload.logger.info(`Creating ${config.volumes.categories} categories...`)
 
+  // Categories ordered by Faker method availability (high to low)
   const categoryNames = [
-    'Electronics',
-    'Fashion',
-    'Home & Garden',
+    // Direct Faker methods available
+    'Books',              // faker.book.title()
+    'Food',               // faker.food.dish()
+    'Automotive',         // faker.vehicle.manufacturer()
+    'Music',              // faker.music.songName()
+
+    // Easy combinations
+    'Fashion',            // faker.color.human() + type
+    'Electronics',        // brand + type
     'Sports & Outdoors',
-    'Books',
+    'Home & Garden',
     'Toys & Games',
     'Beauty & Personal Care',
-    'Automotive',
-    'Food & Grocery',
     'Pet Supplies',
     'Office Products',
     'Baby Products',
     'Health & Wellness',
-    'Musical Instruments',
     'Garden & Outdoor',
     'Arts & Crafts',
     'Industrial & Scientific',
@@ -191,12 +277,19 @@ export const enhancedSeed = async ({
   payload.logger.info(`✓ Created ${categories.length} categories`)
   payload.logger.info('')
 
-  // Generate products
+  // Generate products (with images for small/medium presets)
+  const enableImageGeneration = presetName === 'small' || presetName === 'medium'
   const { products, productsByPopularity } = await generateProducts(
     payload,
     config.volumes.products,
     categories,
     [sizeVariantType, colorVariantType],
+    {
+      enableImageGeneration,
+      fallbackImageId: noImageMedia.id as string,
+      sizeVariantOptions,
+      colorVariantOptions,
+    },
   )
   payload.logger.info('')
 

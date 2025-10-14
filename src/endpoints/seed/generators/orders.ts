@@ -49,19 +49,59 @@ export async function generateOrders(
     const customer = faker.helpers.arrayElement(context.customers)
     const segment = customer._segment
 
-    // Select product based on Pareto distribution (top 20% get 80% of sales)
-    const popularityTier = weightedChoice(ORDER_PRODUCT_SELECTION)
-    const availableProducts = context.productsByPopularity[popularityTier]
+    // Generate order items (1-5 items per order)
+    const numItems = faker.number.int({ min: 1, max: 5 })
+    const items = []
+    let totalAmount = 0
 
-    if (availableProducts.length === 0) {
-      payload.logger.warn(`No products available for popularity tier: ${popularityTier}`)
-      continue
+    for (let j = 0; j < numItems; j++) {
+      // Select product based on Pareto distribution (top 20% get 80% of sales)
+      const popularityTier = weightedChoice(ORDER_PRODUCT_SELECTION)
+      const availableProducts = context.productsByPopularity[popularityTier]
+
+      if (availableProducts.length === 0) {
+        continue
+      }
+
+      const product = faker.helpers.arrayElement(availableProducts)
+      const quantity = faker.number.int({ min: 1, max: 3 })
+
+      // Check if product has variants
+      const variants = await payload.find({
+        collection: 'variants',
+        where: {
+          product: { equals: product.id },
+        },
+        limit: 100,
+      })
+
+      let variantId: string | number | null = null
+      let itemPrice = product.priceInUSD || 0
+
+      // Select a random variant if available
+      if (variants.docs.length > 0) {
+        const selectedVariant = faker.helpers.arrayElement(variants.docs)
+        variantId = selectedVariant.id
+        // Use variant price if available
+        itemPrice = selectedVariant.priceInUSD || itemPrice
+      }
+
+      // Calculate item total
+      const itemTotal = itemPrice * quantity
+      totalAmount += itemTotal
+
+      items.push({
+        product: product.id,
+        variant: variantId,
+        quantity,
+      })
     }
 
-    const product = faker.helpers.arrayElement(availableProducts)
-
-    // Generate order amount based on customer segment
-    const amount = generateOrderAmount(segment)
+    // Skip if no items generated
+    if (items.length === 0) {
+      payload.logger.warn(`No items generated for order ${i}`)
+      continue
+    }
 
     // Generate order date with recency bias
     const createdAt = generateRecentDate(startDate, endDate)
@@ -69,12 +109,32 @@ export async function generateOrders(
     // Determine order status
     const status = weightedChoice(ORDER_STATUS)
 
-    // Generate transaction
+    // Generate order first
+    const orderData = {
+      customer: customer.id,
+      currency: 'USD' as const,
+      amount: totalAmount,
+      status,
+      shippingAddress: generateAddress(),
+      items,
+      createdAt: createdAt.toISOString(),
+    }
+
+    const order = await payload.create({
+      collection: 'orders',
+      data: orderData,
+      depth: 0,
+    })
+
+    // Generate transaction with order reference
     const transactionStatus = status === 'completed' ? 'succeeded' : 'pending'
 
     const transaction = await payload.create({
       collection: 'transactions',
       data: {
+        order: order.id,
+        amount: totalAmount,
+        items, // Add items to transaction
         customer: customer.id,
         currency: 'USD',
         paymentMethod: 'stripe',
@@ -89,27 +149,13 @@ export async function generateOrders(
       depth: 0,
     })
 
-    // Generate order
-    const orderData = {
-      customer: customer.id,
-      currency: 'USD' as const,
-      amount,
-      status,
-      transactions: [transaction.id],
-      shippingAddress: generateAddress(),
-      items: [
-        {
-          product: product.id,
-          quantity: faker.number.int({ min: 1, max: 3 }),
-        },
-      ],
-      createdAt: createdAt.toISOString(),
-    }
-
-    const order = await payload.create({
+    // Update order with transaction reference
+    await payload.update({
       collection: 'orders',
-      data: orderData,
-      depth: 0,
+      id: order.id,
+      data: {
+        transactions: [transaction.id],
+      },
     })
 
     orders.push(order)
@@ -120,12 +166,16 @@ export async function generateOrders(
     }
   }
 
-  payload.logger.info(`✓ Generated ${count} orders`)
+  payload.logger.info(`✓ Generated ${orders.length} orders`)
+
+  // Calculate total items
+  const totalItems = orders.reduce((sum, order) => sum + (order.items?.length || 0), 0)
+  payload.logger.info(`  Total order items: ${totalItems}`)
 
   // Log popularity distribution
   const popularityStats = countOrdersByPopularity(orders, context.productsByPopularity)
   payload.logger.info(
-    `  Product popularity distribution: High=${popularityStats.high}, Medium=${popularityStats.medium}, Low=${popularityStats.low}`,
+    `  Item popularity distribution: High=${popularityStats.high}, Medium=${popularityStats.medium}, Low=${popularityStats.low}`,
   )
 
   return orders
@@ -151,7 +201,7 @@ function generateAddress() {
 }
 
 /**
- * Count orders by product popularity tier
+ * Count order items by product popularity tier
  */
 function countOrdersByPopularity(
   orders: Order[],
@@ -172,16 +222,18 @@ function countOrdersByPopularity(
     }
   }
 
-  // Count orders by popularity
+  // Count all order items by popularity (not just first item)
   for (const order of orders) {
     if (order.items && order.items.length > 0) {
-      const productId = typeof order.items[0].product === 'object'
-        ? order.items[0].product.id
-        : order.items[0].product
+      for (const item of order.items) {
+        const productId = typeof item.product === 'object'
+          ? item.product.id
+          : item.product
 
-      const popularity = productIdToPopularity.get(productId)
-      if (popularity) {
-        counts[popularity]++
+        const popularity = productIdToPopularity.get(productId)
+        if (popularity) {
+          counts[popularity]++
+        }
       }
     }
   }

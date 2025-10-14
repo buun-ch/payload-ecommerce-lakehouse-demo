@@ -51,10 +51,32 @@ export async function generateCarts(
     const numItems = faker.number.int({ min: 1, max: 3 })
     const selectedProducts = faker.helpers.arrayElements(context.products, numItems)
 
-    const items = selectedProducts.map((product) => ({
-      product: product.id,
-      quantity: faker.number.int({ min: 1, max: 2 }),
-    }))
+    const items = await Promise.all(
+      selectedProducts.map(async (product) => {
+        // Check if product has variants
+        const variants = await payload.find({
+          collection: 'variants',
+          where: {
+            product: { equals: product.id },
+          },
+          limit: 100,
+        })
+
+        let variantId: string | number | null = null
+
+        // Select a random variant if available
+        if (variants.docs.length > 0) {
+          const selectedVariant = faker.helpers.arrayElement(variants.docs)
+          variantId = selectedVariant.id
+        }
+
+        return {
+          product: product.id,
+          variant: variantId,
+          quantity: faker.number.int({ min: 1, max: 2 }),
+        }
+      }),
+    )
 
     // Calculate subtotal
     const subtotal = faker.number.int({ min: 2000, max: 20000 })

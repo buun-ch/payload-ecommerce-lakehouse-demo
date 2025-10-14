@@ -75,6 +75,10 @@ check-venv:
 seed preset="medium":
     pnpm seed:{{ preset }}
 
+# Seed database with op run (to load Pexels API key)
+op-seed preset="medium":
+    op run --env-file=.env.local -- pnpm seed:{{ preset }}
+
 # Clear all seeded data from database
 clear-seed:
     pnpm clear-seed
