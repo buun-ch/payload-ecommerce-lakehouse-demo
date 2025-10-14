@@ -1,3 +1,10 @@
+"""
+Schema conversion utilities for Apache Iceberg.
+
+This module provides utilities to convert dlt table schemas to Apache Iceberg
+schemas via PyArrow as an intermediate representation.
+"""
+
 import pyarrow as pa
 from dlt.common.destination import DestinationCapabilitiesContext
 from dlt.common.libs.pyarrow import columns_to_arrow
@@ -18,7 +25,52 @@ from pyiceberg.types import (
 
 
 def create_iceberg_schema_from_table_schema(table_schema: TTableSchema) -> Schema:
-    """Create Iceberg Schema from dlt TTableSchema using dlt's built-in PyArrow conversion."""
+    """
+    Create Apache Iceberg Schema from dlt table schema.
+
+    This function converts a dlt table schema to an Iceberg schema by first
+    converting to PyArrow schema using dlt's built-in capabilities, then mapping
+    PyArrow types to corresponding Iceberg types.
+
+    Parameters
+    ----------
+    table_schema : TTableSchema
+        dlt table schema containing column definitions and metadata
+
+    Returns
+    -------
+    Schema
+        Apache Iceberg schema with fields mapped from dlt columns
+
+    Notes
+    -----
+    Type Mapping:
+        - PyArrow string/large_string -> Iceberg StringType
+        - PyArrow integer types -> Iceberg LongType
+        - PyArrow floating types -> Iceberg DoubleType
+        - PyArrow boolean -> Iceberg BooleanType
+        - PyArrow timestamp with timezone -> Iceberg TimestamptzType
+        - PyArrow timestamp without timezone -> Iceberg TimestampType
+        - PyArrow date -> Iceberg DateType
+        - PyArrow binary -> Iceberg BinaryType
+        - Unknown types -> Iceberg StringType (fallback)
+
+    All fields are marked as optional (required=False) to handle NULL values.
+
+    Examples
+    --------
+    >>> from dlt.common.schema import TTableSchema
+    >>> table_schema: TTableSchema = {
+    ...     "name": "products",
+    ...     "columns": {
+    ...         "id": {"data_type": "bigint", "primary_key": True},
+    ...         "name": {"data_type": "text"},
+    ...         "price": {"data_type": "double"},
+    ...     }
+    ... }
+    >>> iceberg_schema = create_iceberg_schema_from_table_schema(table_schema)
+    >>> print(iceberg_schema)
+    """
 
     columns = table_schema.get("columns", {})
     caps = DestinationCapabilitiesContext.generic_capabilities()

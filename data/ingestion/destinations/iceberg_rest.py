@@ -1,7 +1,13 @@
 """
-Custom Iceberg REST Catalog destination for dlt
+Custom Iceberg REST Catalog destination for dlt.
 
-This destination writes data to Apache Iceberg tables via REST Catalog API.
+This module implements a custom dlt destination that writes data to Apache Iceberg
+tables via the REST Catalog API. It supports multiple write dispositions (replace,
+merge, append) and handles schema evolution automatically.
+
+The destination uses PyArrow as the intermediate format and PyIceberg for table
+operations. Configuration is read from environment variables for flexibility across
+different environments.
 """
 
 import os
@@ -26,6 +32,19 @@ from destinations.iceberg_schema import create_iceberg_schema_from_table_schema
 
 @cache
 def get_catalog() -> RestCatalog:
+    """
+    Get a cached Iceberg REST Catalog instance.
+
+    Returns
+    -------
+    RestCatalog
+        Configured PyIceberg REST Catalog client
+
+    Notes
+    -----
+    This function is cached to reuse the same catalog instance across multiple
+    calls, improving performance and reducing overhead.
+    """
     return RestCatalog(
         name="rest_catalog",
         uri=iceberg_catalog_url(),
@@ -35,26 +54,79 @@ def get_catalog() -> RestCatalog:
 
 
 def iceberg_catalog_url() -> str:
+    """
+    Get Iceberg REST Catalog URL from environment.
+
+    Returns
+    -------
+    str
+        REST Catalog API endpoint URL, defaults to "http://localhost:8181/catalog"
+    """
     return os.getenv("ICEBERG_CATALOG_URL", "http://localhost:8181/catalog")
 
 
 def iceberg_warehouse() -> str:
+    """
+    Get Iceberg warehouse name from environment.
+
+    Returns
+    -------
+    str
+        Warehouse identifier, defaults to "ecommerce"
+    """
     return os.getenv("ICEBERG_WAREHOUSE", "ecommerce")
 
 
 def iceberg_namespace() -> str:
+    """
+    Get Iceberg namespace from environment.
+
+    Returns
+    -------
+    str
+        Namespace (database) name for tables, defaults to "ecommerce"
+    """
     return os.getenv("ICEBERG_NAMESPACE", "ecommerce")
 
 
 def iceberg_token() -> str:
+    """
+    Get Iceberg authentication token from environment.
+
+    Returns
+    -------
+    str
+        Authentication token for REST Catalog, empty string if not set
+    """
     return os.getenv("ICEBERG_TOKEN", "")
 
 
 def batch_size() -> int:
+    """
+    Get batch size for data loading from environment.
+
+    Returns
+    -------
+    int
+        Number of records to process per batch, defaults to 1000
+    """
     return int(os.getenv("BATCH_SIZE", "1000"))
 
 
 def get_primary_keys(table: TTableSchema) -> list[str]:
+    """
+    Extract primary key column names from dlt table schema.
+
+    Parameters
+    ----------
+    table : TTableSchema
+        dlt table schema containing column definitions
+
+    Returns
+    -------
+    list of str
+        List of column names marked as primary keys, empty list if none defined
+    """
     primary_keys = []
     if "columns" in table:
         for column_name, column_info in table["columns"].items():
@@ -65,6 +137,67 @@ def get_primary_keys(table: TTableSchema) -> list[str]:
 
 @dlt.destination(batch_size=batch_size(), loader_file_format="parquet")
 def iceberg_rest_catalog(items: TDataItems, table: TTableSchema) -> None:
+    """
+    Custom dlt destination for Apache Iceberg via REST Catalog.
+
+    This function writes data batches to Iceberg tables, handling table creation,
+    write dispositions (replace/merge/append), and schema alignment automatically.
+
+    Parameters
+    ----------
+    items : TDataItems
+        Data items to load, can be PyArrow Table, RecordBatch, or list of dicts
+    table : TTableSchema
+        dlt table schema containing metadata, write disposition, and column definitions
+
+    Environment Variables
+    ---------------------
+    ICEBERG_CATALOG_URL : str, default "http://localhost:8181/catalog"
+        REST Catalog API endpoint
+    ICEBERG_WAREHOUSE : str, default "ecommerce"
+        Warehouse identifier
+    ICEBERG_NAMESPACE : str, default "ecommerce"
+        Namespace (database) for tables
+    ICEBERG_TOKEN : str, optional
+        Authentication token for REST Catalog
+    BATCH_SIZE : int, default 1000
+        Number of records per batch
+
+    Notes
+    -----
+    Write Dispositions:
+        - replace: Deletes all existing data, then appends new data
+        - merge: Deletes rows matching primary keys, then appends new data
+        - append: Simply appends new data without deletion
+
+    Table Creation:
+        If table doesn't exist, it's created automatically with schema inferred
+        from the dlt table schema. Tables use Parquet format with Snappy compression.
+
+    Schema Alignment:
+        Data is automatically aligned to match the Iceberg table schema. Missing
+        columns are filled with NULL values.
+
+    Examples
+    --------
+    Use as a dlt destination:
+
+    >>> import dlt
+    >>> from destinations.iceberg_rest import iceberg_rest_catalog
+    >>> pipeline = dlt.pipeline(
+    ...     pipeline_name="my_pipeline",
+    ...     destination=iceberg_rest_catalog,
+    ...     dataset_name="my_dataset",
+    ... )
+    >>> pipeline.run(source, write_disposition="replace")
+
+    Raises
+    ------
+    ValueError
+        If table schema doesn't contain a 'name' field
+    NoSuchTableError
+        If table doesn't exist and needs to be created
+    """
     if "name" not in table:
         raise ValueError("Table schema must have a 'name' field")
     table_name = table["name"]

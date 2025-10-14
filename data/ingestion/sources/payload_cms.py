@@ -20,30 +20,51 @@ def payload_cms_source(
     depth: int = 2,
 ) -> Any:
     """
-    Create a Payload CMS REST API source
+    Create a Payload CMS REST API source.
 
-    Args:
-        base_url: Base URL of Payload CMS API
-        collections: List of collections to extract (default: all ecommerce collections)
-        auth_token: JWT authentication token (optional)
-        limit: Records per page
-        depth: Related data depth
+    Parameters
+    ----------
+    base_url : str, default "http://localhost:3000/api"
+        Base URL of Payload CMS API
+    collections : list of str, optional
+        List of collections to extract. If None, extracts all default ecommerce collections
+        (orders, transactions, carts, products, variants, categories, users, addresses,
+        variantTypes, variantOptions)
+    auth_token : str, optional
+        JWT authentication token for protected collections
+    limit : int, default 100
+        Number of records to fetch per page
+    depth : int, default 2
+        Depth level for fetching related/nested data
 
-    Returns:
-        dlt source with configured resources
+    Returns
+    -------
+    DltSource
+        dlt source with configured resources for each collection
 
-    Example:
-        >>> source = payload_cms_source(
-        ...     base_url="http://localhost:3000/api",
-        ...     collections=["orders", "products", "categories"],
-        ...     depth=2,
-        ... )
-        >>> pipeline = dlt.pipeline(
-        ...     pipeline_name="payload_to_iceberg",
-        ...     destination="iceberg_rest",
-        ...     dataset_name="raw",
-        ... )
-        >>> load_info = pipeline.run(source)
+    Examples
+    --------
+    Basic usage with default collections:
+
+    >>> source = payload_cms_source(
+    ...     base_url="http://localhost:3000/api",
+    ...     collections=["orders", "products", "categories"],
+    ...     depth=2,
+    ... )
+    >>> pipeline = dlt.pipeline(
+    ...     pipeline_name="payload_to_iceberg",
+    ...     destination="iceberg_rest",
+    ...     dataset_name="raw",
+    ... )
+    >>> load_info = pipeline.run(source)
+
+    With authentication:
+
+    >>> source = payload_cms_source(
+    ...     base_url="http://localhost:3000/api",
+    ...     auth_token="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    ...     limit=50,
+    ... )
     """
 
     # Default ecommerce collections
@@ -110,25 +131,54 @@ def payload_cms_incremental(
     initial_timestamp: str = "2024-01-01T00:00:00Z",
 ) -> Any:
     """
-    Create a Payload CMS source with incremental loading
+    Create a Payload CMS source with incremental loading.
 
-    Args:
-        base_url: Base URL of Payload CMS API
-        collections: List of collections to extract
-        auth_token: JWT authentication token (optional)
-        limit: Records per page
-        depth: Related data depth
-        initial_timestamp: Initial timestamp for incremental loading
+    This source uses the `updatedAt` field to track changes and only loads
+    records that have been updated since the last pipeline run.
 
-    Returns:
-        dlt source with incremental loading configured
+    Parameters
+    ----------
+    base_url : str, default "http://localhost:3000/api"
+        Base URL of Payload CMS API
+    collections : list of str, optional
+        List of collections to extract. If None, extracts default collections
+        (orders, transactions, carts, products, variants, categories, users, addresses)
+    auth_token : str, optional
+        JWT authentication token for protected collections
+    limit : int, default 100
+        Number of records to fetch per page
+    depth : int, default 2
+        Depth level for fetching related/nested data
+    initial_timestamp : str, default "2024-01-01T00:00:00Z"
+        ISO 8601 timestamp to start incremental loading from on first run
 
-    Example:
-        >>> source = payload_cms_incremental(
-        ...     base_url="http://localhost:3000/api",
-        ...     collections=["orders", "products"],
-        ...     initial_timestamp="2024-01-01T00:00:00Z",
-        ... )
+    Returns
+    -------
+    DltSource
+        dlt source with incremental loading configured using merge write disposition
+
+    Examples
+    --------
+    Basic incremental loading:
+
+    >>> source = payload_cms_incremental(
+    ...     base_url="http://localhost:3000/api",
+    ...     collections=["orders", "products"],
+    ...     initial_timestamp="2024-01-01T00:00:00Z",
+    ... )
+    >>> pipeline = dlt.pipeline(
+    ...     pipeline_name="payload_to_iceberg",
+    ...     destination="iceberg_rest",
+    ...     dataset_name="raw",
+    ... )
+    >>> load_info = pipeline.run(source)
+
+    With custom start date:
+
+    >>> source = payload_cms_incremental(
+    ...     auth_token="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    ...     initial_timestamp="2025-01-01T00:00:00Z",
+    ... )
     """
 
     if collections is None:

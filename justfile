@@ -43,7 +43,14 @@ check-tables: check-venv
 
 # Clear the DLT pipeline state
 clear-pipeline:
+    #!/bin/bash
+    set -euo pipefail
+    echo "Clearing all Payload CMS pipeline states..."
     rm -rf ~/.dlt/pipelines/payload_to_iceberg_full
+    rm -rf ~/.dlt/pipelines/payload_to_iceberg_incremental
+    rm -rf ~/.dlt/pipelines/payload_to_iceberg
+    rm -rf ~/.dlt/pipelines/payload_to_duckdb
+    echo "Pipeline states cleared!"
 
 [private]
 [working-directory("data/ingestion")]
