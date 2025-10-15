@@ -1,0 +1,47 @@
+set fallback := true
+
+[private]
+default:
+    @just --list --unsorted --list-submodules
+
+# Run the dlt pipeline script directly
+run: check-venv
+    #!/bin/bash
+    set -euo pipefail
+    source .venv/bin/activate
+    source .env.local
+    python payload_pipeline.py
+
+# Run the dlt pipeline script with `op run`
+op-run: check-venv
+    #!/bin/bash
+    set -euo pipefail
+    source .venv/bin/activate
+    op run --env-file=.env.local -- python payload_pipeline.py
+
+# Check if Iceberg tables exist and have data
+check-tables: check-venv
+    #!/bin/bash
+    set -euo pipefail
+    source .venv/bin/activate
+    op run --env-file=.env.local -- python check_tables.py
+
+# Clear the DLT pipeline state
+clear:
+    #!/bin/bash
+    set -euo pipefail
+    echo "Clearing all Payload CMS pipeline states..."
+    rm -rf ~/.dlt/pipelines/payload_to_iceberg_full
+    rm -rf ~/.dlt/pipelines/payload_to_iceberg_incremental
+    rm -rf ~/.dlt/pipelines/payload_to_iceberg
+    rm -rf ~/.dlt/pipelines/payload_to_duckdb
+    echo "Pipeline states cleared!"
+
+[private]
+check-venv:
+    #!/bin/bash
+    set -euo pipefail
+    if [ ! -d .venv ]; then
+        echo "Python venv not found. Create it first with 'uv venv'."
+        exit 1
+    fi

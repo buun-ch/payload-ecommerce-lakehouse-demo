@@ -69,14 +69,15 @@ This guide explains how to integrate Payload CMS Ecommerce with a modern data st
 - **Storage**: MinIO (S3-compatible object storage)
 - **Catalog**: Iceberg REST Catalog
 - **Tables Created**: Raw copies of source collections
-    - `raw.orders`
-    - `raw.products`
-    - `raw.variants`
-    - `raw.users`
-    - `raw.transactions`
-    - `raw.carts`
-    - `raw.categories`
-    - `raw.addresses`
+    - `orders`
+    - `products`
+    - `variants`
+    - `variantOptions`
+    - `variantTypes`
+    - `users`
+    - `transactions`
+    - `carts`
+    - `categories`
 
 ### Layer 4: Transform (dbt)
 
