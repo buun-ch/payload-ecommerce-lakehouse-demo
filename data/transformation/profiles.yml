@@ -1,0 +1,38 @@
+# Setup instructions:
+# 1. Copy this file to ~/.dbt/profiles.yml
+# 2. Create .env.local with your credentials (see env.local.example)
+# 3. Run dbt with: op run --env-file=.env.local -- dbt run
+#
+# Or use environment variables directly:
+#   export ICEBERG_CATALOG_URL="http://..."
+#   dbt run
+
+payload_ecommerce:
+  outputs:
+    # Development target (Trino + Iceberg)
+    # Uses separate schema to avoid affecting production data
+    dev:
+      type: trino
+      method: oauth  # OAuth2 for HTTPS (user is determined by OAuth token)
+      host: trino.buun.dev
+      port: 443
+      http_scheme: https
+      cert: True  # Enable SSL certificate verification (uses system CA bundle)
+      catalog: iceberg  # Iceberg catalog name in Trino
+      schema: ecommerce_dev  # Development schema
+      threads: 4
+
+    # Production target (Trino + Iceberg)
+    # Use with: dbt run --target=prod
+    prod:
+      type: trino
+      method: oauth  # OAuth2 for HTTPS (user is determined by OAuth token)
+      host: trino.buun.dev
+      port: 443
+      http_scheme: https
+      cert: True  # Enable SSL certificate verification (uses system CA bundle)
+      catalog: iceberg  # Iceberg catalog name in Trino
+      schema: ecommerce  # Production schema
+      threads: 8
+
+  target: dev  # Default to development

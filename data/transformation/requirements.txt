@@ -1,0 +1,11 @@
+# dbt transformation dependencies
+# Install with: pip install -r requirements.txt
+
+# dbt with Trino adapter
+dbt-trino>=1.9.3
+
+# Optional: SQL formatter for better dbt compile output
+sqlfluff>=3.0.0
+
+# Optional: Data quality testing
+great-expectations>=0.18.0

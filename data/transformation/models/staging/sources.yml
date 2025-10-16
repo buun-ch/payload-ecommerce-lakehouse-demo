@@ -1,0 +1,85 @@
+version: 2
+
+sources:
+  - name: ecommerce
+    description: Raw ecommerce data loaded by dlt from Payload CMS
+    # Trino: catalog=iceberg (configured in profiles.yml)
+    database: iceberg
+    schema: ecommerce
+    tables:
+      - name: orders
+        description: Raw orders from Payload CMS (items stored as JSON array)
+        columns:
+          - name: id
+            description: Order ID
+            tests:
+              - unique
+              - not_null
+          - name: items
+            description: JSON array of order items
+          - name: customer
+            description: JSON object containing customer data
+
+      - name: products
+        description: Raw products from Payload CMS
+        columns:
+          - name: id
+            tests:
+              - unique
+              - not_null
+
+      - name: variants
+        description: Product variants
+        columns:
+          - name: id
+            tests:
+              - unique
+              - not_null
+          - name: product
+            description: JSON object containing product data
+
+      - name: categories
+        description: Product categories
+        columns:
+          - name: id
+            tests:
+              - unique
+              - not_null
+
+      - name: users
+        description: User accounts (customers and admins)
+        columns:
+          - name: id
+            tests:
+              - unique
+              - not_null
+          - name: roles
+            description: JSON array of user roles
+
+      - name: transactions
+        description: Payment transactions
+        columns:
+          - name: id
+            tests:
+              - unique
+              - not_null
+          - name: "order"
+            description: JSON object containing order data
+          - name: customer
+            description: JSON object containing customer data
+
+      - name: carts
+        description: Shopping carts
+        columns:
+          - name: id
+            tests:
+              - unique
+              - not_null
+          - name: customer
+            description: JSON object containing customer data (null for guest carts)
+
+      - name: variantTypes
+        description: Variant type definitions
+
+      - name: variantOptions
+        description: Variant option values

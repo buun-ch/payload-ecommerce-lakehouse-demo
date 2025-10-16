@@ -1,0 +1,161 @@
+set fallback := true
+
+[private]
+default:
+    @just --list --unsorted --list-submodules
+
+# Run dbt transformations directly
+run *args: check-venv
+    #!/bin/bash
+    set -euo pipefail
+    source .venv/bin/activate
+    source .env.local
+    dbt run {{ args }}
+
+# Run dbt transformations with `op run`
+op-run *args: check-venv
+    #!/bin/bash
+    set -euo pipefail
+    source .venv/bin/activate
+    op run --env-file=.env.local -- dbt run {{ args }}
+
+# Run dbt tests directly
+test *args: check-venv
+    #!/bin/bash
+    set -euo pipefail
+    source .venv/bin/activate
+    source .env.local
+    dbt test {{ args }}
+
+# Run dbt tests with `op run`
+op-test *args: check-venv
+    #!/bin/bash
+    set -euo pipefail
+    source .venv/bin/activate
+    op run --env-file=.env.local -- dbt test {{ args }}
+
+# Test connection and configuration directly
+debug *args: check-venv
+    #!/bin/bash
+    set -euo pipefail
+    source .venv/bin/activate
+    source .env.local
+    dbt debug {{ args }}
+
+# Test connection and configuration with `op run`
+op-debug *args: check-venv
+    #!/bin/bash
+    set -euo pipefail
+    source .venv/bin/activate
+    op run --env-file=.env.local -- dbt debug {{ args }}
+
+# Generate dbt documentation directly
+docs-generate: check-venv
+    #!/bin/bash
+    set -euo pipefail
+    source .venv/bin/activate
+    source .env.local
+    dbt docs generate
+
+# Generate dbt documentation with `op run`
+op-docs-generate: check-venv
+    #!/bin/bash
+    set -euo pipefail
+    source .venv/bin/activate
+    op run --env-file=.env.local -- dbt docs generate
+
+# Serve dbt documentation on http://localhost:8080 directly
+docs-serve: check-venv
+    #!/bin/bash
+    set -euo pipefail
+    source .venv/bin/activate
+    source .env.local
+    dbt docs serve
+
+# Serve dbt documentation on http://localhost:8080 with `op run`
+op-docs-serve: check-venv
+    #!/bin/bash
+    set -euo pipefail
+    source .venv/bin/activate
+    op run --env-file=.env.local -- dbt docs serve
+
+# Run specific model directly
+run-model MODEL *args: check-venv
+    #!/bin/bash
+    set -euo pipefail
+    source .venv/bin/activate
+    source .env.local
+    dbt run --select {{ MODEL }} {{ args }}
+
+# Run specific model with `op run`
+op-run-model MODEL *args: check-venv
+    #!/bin/bash
+    set -euo pipefail
+    source .venv/bin/activate
+    op run --env-file=.env.local -- dbt run --select {{ MODEL }} {{ args }}
+
+# Run staging models only directly
+run-staging *args: check-venv
+    #!/bin/bash
+    set -euo pipefail
+    source .venv/bin/activate
+    source .env.local
+    dbt run --select staging {{ args }}
+
+# Run staging models only with `op run`
+op-run-staging *args: check-venv
+    #!/bin/bash
+    set -euo pipefail
+    source .venv/bin/activate
+    op run --env-file=.env.local -- dbt run --select staging {{ args }}
+
+# Run mart models only directly
+run-marts *args: check-venv
+    #!/bin/bash
+    set -euo pipefail
+    source .venv/bin/activate
+    source .env.local
+    dbt run --select marts {{ args }}
+
+# Run mart models only with `op run`
+op-run-marts *args: check-venv
+    #!/bin/bash
+    set -euo pipefail
+    source .venv/bin/activate
+    op run --env-file=.env.local -- dbt run --select marts {{ args }}
+
+# Full refresh (rebuild all tables) directly
+full-refresh *args: check-venv
+    #!/bin/bash
+    set -euo pipefail
+    source .venv/bin/activate
+    source .env.local
+    dbt run --full-refresh {{ args }}
+
+# Full refresh (rebuild all tables) with `op run`
+op-full-refresh *args: check-venv
+    #!/bin/bash
+    set -euo pipefail
+    source .venv/bin/activate
+    op run --env-file=.env.local -- dbt run --full-refresh {{ args }}
+
+# Clean dbt artifacts
+clean:
+    #!/bin/bash
+    set -euo pipefail
+    echo "Cleaning dbt artifacts..."
+    rm -rf target/
+    rm -rf logs/
+    rm -rf dbt_packages/
+    rm -f *.duckdb
+    rm -f *.duckdb.wal
+    echo "Artifacts cleaned!"
+
+[private]
+check-venv:
+    #!/bin/bash
+    set -euo pipefail
+    if [ ! -d .venv ]; then
+        echo "Python venv not found. Create it first with 'uv venv' or 'python -m venv .venv'."
+        exit 1
+    fi

@@ -1,0 +1,137 @@
+version: 2
+
+models:
+  - name: fact_orders
+    description: Fact table containing order-level transactions
+    columns:
+      - name: order_id
+        description: Unique order identifier
+        tests:
+          - unique
+          - not_null
+      - name: customer_id
+        description: Foreign key to dim_customers
+        tests:
+          - not_null
+      - name: amount_usd
+        description: Order total in USD
+        tests:
+          - not_null
+      - name: order_date
+        description: Date of order creation
+        tests:
+          - not_null
+
+  - name: fact_order_items
+    description: Fact table containing order line items
+    columns:
+      - name: order_item_id
+        description: Unique order item identifier
+        tests:
+          - unique
+          - not_null
+      - name: order_id
+        description: Foreign key to fact_orders
+        tests:
+          - not_null
+      - name: product_id
+        description: Foreign key to dim_products
+        tests:
+          - not_null
+      - name: quantity
+        description: Quantity ordered
+        tests:
+          - not_null
+      - name: line_total_usd
+        description: Line item total (quantity * unit_price)
+
+  - name: fact_transactions
+    description: Fact table containing payment transactions
+    columns:
+      - name: transaction_id
+        description: Unique transaction identifier
+        tests:
+          - unique
+          - not_null
+      - name: order_id
+        description: Foreign key to fact_orders
+      - name: customer_id
+        description: Foreign key to dim_customers
+        tests:
+          - not_null
+      - name: amount_usd
+        description: Transaction amount in USD
+        tests:
+          - not_null
+      - name: status
+        description: Transaction status (succeeded, pending, failed)
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['succeeded', 'pending', 'failed']
+
+  - name: dim_products
+    description: Dimension table for products
+    columns:
+      - name: product_id
+        description: Unique product identifier
+        tests:
+          - unique
+          - not_null
+      - name: product_name
+        description: Product title
+        tests:
+          - not_null
+      - name: price_usd
+        description: Product price in USD
+      - name: is_in_stock
+        description: Whether product has inventory
+
+  - name: dim_customers
+    description: Dimension table for customers with lifetime metrics
+    columns:
+      - name: customer_id
+        description: Unique customer identifier
+        tests:
+          - unique
+          - not_null
+      - name: customer_email
+        description: Customer email address
+        tests:
+          - not_null
+      - name: customer_segment
+        description: Customer segmentation (VIP, Regular, Active, New)
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['VIP', 'Regular', 'Active', 'New']
+      - name: lifetime_value_usd
+        description: Total revenue from customer
+
+  - name: dim_categories
+    description: Dimension table for product categories
+    columns:
+      - name: category_id
+        description: Unique category identifier
+        tests:
+          - unique
+          - not_null
+      - name: category_name
+        description: Category name
+
+  - name: dim_date
+    description: Date dimension table for time-based analysis
+    columns:
+      - name: date_key
+        description: Date key (primary key)
+        tests:
+          - unique
+          - not_null
+      - name: year
+        description: Year
+      - name: quarter
+        description: Quarter (1-4)
+      - name: month
+        description: Month (1-12)
+      - name: is_weekend
+        description: Whether date is on weekend

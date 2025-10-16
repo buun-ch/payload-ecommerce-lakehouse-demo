@@ -5,4 +5,5 @@ default:
     @just --list --unsorted --list-submodules
 
 mod payload "payload.just"
-mod ingestion "data/ingestion"
+mod dlt "data/ingestion"
+mod dbt "data/transformation"
