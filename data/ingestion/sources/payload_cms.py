@@ -101,6 +101,7 @@ def payload_cms_source(
                         "sort": "createdAt",
                     },
                     "paginator": PageNumberPaginator(
+                        base_page=1,  # Payload CMS pages start at 1, not 0
                         page_param="page",
                         total_path="totalPages",
                         maximum_page=10000,
@@ -216,6 +217,7 @@ def payload_cms_incremental(
                         },
                     },
                     "paginator": PageNumberPaginator(
+                        base_page=1,  # Payload CMS pages start at 1, not 0
                         page_param="page",
                         total_path="totalPages",
                         maximum_page=10000,
