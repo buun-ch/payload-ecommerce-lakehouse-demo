@@ -30,9 +30,8 @@ just dbt::op-test
 
 ### Prerequisites
 
-- Python 3.11+
-- 1Password CLI (optional, for credential management)
-- Access to Trino cluster (trino.buun.dev)
+- Python 3.12+
+- Access to Trino cluster
 
 ### Installation
 
@@ -66,7 +65,7 @@ models/
 ├── staging/           # Clean raw data from Iceberg
 │   ├── sources.yml    # Source definitions
 │   └── stg_*.sql      # Staging views (JSON parsing)
-└── marts/            # Star schema for analytics
+└── marts/             # Star schema for analytics
     ├── schema.yml     # Documentation and tests
     ├── fact_*.sql     # Fact tables
     └── dim_*.sql      # Dimension tables
@@ -209,6 +208,7 @@ For sample analytical queries and Metabase dashboard examples, see:
 📊 **[Analytics Query Examples](../../docs/analysis_queries.md)**
 
 This includes:
+
 - Sales performance analysis (daily/monthly trends, KPIs)
 - Product analysis (best sellers, category performance, inventory alerts)
 - Customer analysis (segmentation, LTV, cohort analysis, RFM)

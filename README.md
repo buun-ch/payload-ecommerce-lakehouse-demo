@@ -90,8 +90,6 @@ Built with [Payload CMS ecommerce template](./README-payload.md):
 ### Prerequisites
 
 - [mise](https://mise.jdx.dev/) - Development tool version manager
-- Docker & Docker Compose (for buun-stack)
-- 1Password CLI (optional, for secrets management)
 
 **Note**: Node.js, Python, pnpm, and just are managed by mise and will be installed automatically.
 
@@ -171,8 +169,6 @@ Built with [Payload CMS ecommerce template](./README-payload.md):
    ```
 
 5. **Query with Trino/Metabase:**
-
-   Connect to Trino at `https://trino.buun.dev` (via buun-stack)
 
    Sample queries available in [docs/analysis_queries.md](./docs/analysis_queries.md)
 
