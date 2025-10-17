@@ -236,6 +236,82 @@ WRITE_DISPOSITION=merge INITIAL_TIMESTAMP="2025-01-01T00:00:00Z" python payload_
 PIPELINE_MODE=debug python payload_pipeline.py
 ```
 
+## Payload CMS REST API Reference
+
+### Available Endpoints
+
+The pipeline extracts data from these Payload CMS collections:
+
+**Fact Data Sources:**
+- `/api/orders` - Order transactions
+- `/api/transactions` - Payment transactions
+- `/api/carts` - Shopping cart activities
+
+**Dimension Data Sources:**
+- `/api/products` - Product master data
+- `/api/variants` - Product variant details
+- `/api/categories` - Product categories
+- `/api/users` - Customer information
+- `/api/variantTypes` - Variant type definitions
+- `/api/variantOptions` - Variant option values
+
+### Query Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `limit` | integer | 10 | Records per page |
+| `page` | integer | 1 | Page number |
+| `where` | JSON object | - | Filter conditions |
+| `sort` | string | - | Sort field (prefix `-` for DESC) |
+| `depth` | integer | 0 | Related data depth (0-10) |
+| `select` | string | - | Fields to return (comma-separated) |
+
+**Where Query Operators:**
+- `equals`, `not_equals`
+- `greater_than`, `greater_than_equal`
+- `less_than`, `less_than_equal`
+- `like`, `contains`
+- `in`, `not_in`, `all`
+- `exists`
+
+### API Examples
+
+**Incremental sync (updated since timestamp):**
+```bash
+curl "http://localhost:3000/api/orders?where[updatedAt][greater_than_equal]=2024-12-10T00:00:00Z&limit=100"
+```
+
+**With sorting:**
+```bash
+curl "http://localhost:3000/api/orders?sort=-createdAt&limit=100"
+```
+
+**With related data (depth):**
+```bash
+curl "http://localhost:3000/api/orders?depth=2&limit=100"
+```
+
+**With field selection:**
+```bash
+curl "http://localhost:3000/api/products?select=id,title,slug,priceInUSD&limit=100"
+```
+
+**Response Format:**
+```json
+{
+  "docs": [ /* array of records */ ],
+  "totalDocs": 1000,
+  "limit": 100,
+  "totalPages": 10,
+  "page": 1,
+  "pagingCounter": 1,
+  "hasPrevPage": false,
+  "hasNextPage": true,
+  "prevPage": null,
+  "nextPage": 2
+}
+```
+
 ## Development
 
 ### Testing Locally

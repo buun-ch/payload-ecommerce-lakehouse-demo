@@ -4,7 +4,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-This is a Payload CMS-based ecommerce application built with Next.js 15, featuring a full-featured online shop with products, variants, carts, orders, and Stripe payment integration. The project uses TypeScript, React 19, TailwindCSS, and PostgreSQL.
+This is a **demonstration project** that integrates a Next.js ecommerce application with an open-source lakehouse architecture.
+
+### Application Layer
+- Payload CMS-based ecommerce application built with Next.js 15
+- Full-featured online shop with products, variants, carts, orders, and Stripe payment integration
+- Built with TypeScript, React 19, TailwindCSS, and PostgreSQL
+- Based on Payload CMS ecommerce template (see [README-payload.md](./README-payload.md))
+
+### Data Layer
+- **Data Ingestion**: dlt (data load tool) extracts data from Payload CMS API to Iceberg
+- **Data Transformation**: dbt transforms raw data into analytics-ready star schema using Trino
+- **Lakehouse Storage**: Apache Iceberg tables via Lakekeeper REST Catalog
+- **Query Engine**: Trino for distributed SQL queries
+- **BI & Analytics**: Metabase dashboards with sample queries
+
+For the complete overview, see [README.md](./README.md).
 
 ## Commands
 
@@ -79,8 +94,8 @@ This is a **monolithic Next.js application** that combines both the Payload CMS 
 - **VariantOptions**: Variant option definitions like color, size (added by ecommerce plugin)
 - **VariantTypes**: Variant type categories (added by ecommerce plugin)
 - **Users**: Auth-enabled collection with two roles:
-  - `admin` - Full access to admin panel and content management
-  - `customer` - Frontend access only, can manage their own orders/addresses
+    - `admin` - Full access to admin panel and content management
+    - `customer` - Frontend access only, can manage their own orders/addresses
 - **Pages**: Layout builder-enabled pages with draft/live preview support
 - **Categories**: Product taxonomy for grouping products
 - **Media**: Upload collection for images and assets with pre-configured sizes and focal point support
@@ -115,10 +130,10 @@ The application uses several Payload plugins configured in `src/plugins/index.ts
 Pages and Products use a **block-based layout builder** for flexible content composition:
 
 - **Blocks** (in `src/blocks/`):
-  - `CallToAction` - CTA sections
-  - `Content` - Rich text content
-  - `MediaBlock` - Image/video blocks
-  - `Archive` - Product listings
+    - `CallToAction` - CTA sections
+    - `Content` - Rich text content
+    - `MediaBlock` - Image/video blocks
+    - `Archive` - Product listings
 
 - **Heros** (in `src/heros/`): Configurable hero sections for pages
 - **RenderBlocks** (`src/blocks/RenderBlocks.tsx`): Dynamically renders blocks on frontend
@@ -182,14 +197,14 @@ When modifying Payload collections/fields:
 - Product configuration: `src/collections/Products/index.ts`
 - Products support optional variants (e.g., size, color)
 - Each product has:
-  - Title, slug, description (Lexical rich text)
-  - Gallery (images with optional variant associations)
-  - Pricing per currency (default USD, configurable in plugin)
-  - Inventory tracking
-  - Categories relationship
-  - Layout blocks for custom content sections
-  - SEO meta fields
-  - Related products
+    - Title, slug, description (Lexical rich text)
+    - Gallery (images with optional variant associations)
+    - Pricing per currency (default USD, configurable in plugin)
+    - Inventory tracking
+    - Categories relationship
+    - Layout blocks for custom content sections
+    - SEO meta fields
+    - Related products
 
 ### Frontend Components
 

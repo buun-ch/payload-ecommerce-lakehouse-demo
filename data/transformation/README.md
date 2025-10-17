@@ -61,7 +61,7 @@ just dbt::op-test
 
 ## Project Structure
 
-```
+```plain
 models/
 ├── staging/           # Clean raw data from Iceberg
 │   ├── sources.yml    # Source definitions
@@ -71,6 +71,53 @@ models/
     ├── fact_*.sql     # Fact tables
     └── dim_*.sql      # Dimension tables
 ```
+
+## Data Models
+
+### Staging Layer (Views)
+
+Staging models clean and standardize raw data from Iceberg, handling JSON extraction with Trino functions.
+
+| Model | Description | Key Transformations |
+|-------|-------------|-------------------|
+| `stg_products` | Product catalog | Clean product data, price formatting |
+| `stg_categories` | Product categories | Category master data |
+| `stg_variants` | Product variants | Extract variant details from JSON |
+| `stg_customers` | Customer profiles | Filter customer users, extract roles from JSON array |
+| `stg_orders` | Order headers | Extract customer ID from JSON object |
+| `stg_order_items` | Order line items | Unnest items JSON array, parse nested product/variant data |
+| `stg_transactions` | Payment transactions | Extract order and customer IDs from JSON |
+| `stg_carts` | Shopping carts | Handle guest vs registered customer carts |
+
+### Marts Layer (Tables)
+
+Marts models create a star schema optimized for analytics and BI tools.
+
+#### Fact Tables
+
+| Table | Type | Description | Grain |
+|-------|------|-------------|-------|
+| `fact_orders` | Incremental | Order-level transactions | One row per order |
+| `fact_order_items` | Incremental | Line item details | One row per product in order |
+| `fact_transactions` | Incremental | Payment transactions | One row per payment transaction |
+
+**Incremental Strategy**: New/updated records only, based on `updated_at` timestamp.
+
+#### Dimension Tables
+
+| Table | Type | Description | Key Attributes |
+|-------|------|-------------|----------------|
+| `dim_products` | Table | Product catalog | Product name, slug, price, inventory, stock flags |
+| `dim_categories` | Table | Product categories | Category hierarchy |
+| `dim_customers` | Table | Customer profiles with metrics | Name, email, segment (VIP/Regular/Active/New), LTV, order count |
+| `dim_date` | Table | Date dimension (2020-2030) | Year, month, day, weekday, is_weekend, is_holiday_season |
+
+### Schema Locations
+
+- **Development**: `ecommerce_dev.ecommerce_staging`, `ecommerce_dev.ecommerce_marts`
+- **Production**: `ecommerce.ecommerce_staging`, `ecommerce.ecommerce_marts`
+
+All models are stored in Iceberg format and queryable via Trino, DuckDB, or Spark.
 
 ## Key Features
 
@@ -154,6 +201,20 @@ just dbt::op-docs-serve
 - **`prod`**: Production workspace using `ecommerce` schema
 
 Both targets write all models to Iceberg via Trino.
+
+## Analytics & BI
+
+For sample analytical queries and Metabase dashboard examples, see:
+
+📊 **[Analytics Query Examples](../../docs/analysis_queries.md)**
+
+This includes:
+- Sales performance analysis (daily/monthly trends, KPIs)
+- Product analysis (best sellers, category performance, inventory alerts)
+- Customer analysis (segmentation, LTV, cohort analysis, RFM)
+- Transaction & payment analysis
+- Advanced analytics (cohort retention, product affinity)
+- Metabase dashboard recommendations
 
 ## Resources
 
