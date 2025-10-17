@@ -89,11 +89,11 @@ Built with [Payload CMS ecommerce template](./README-payload.md):
 
 ### Prerequisites
 
+- [mise](https://mise.jdx.dev/) - Development tool version manager
 - Docker & Docker Compose (for buun-stack)
-- Node.js 18+ (for Next.js app)
-- Python 3.11+ (for dlt & dbt)
-- pnpm (for package management)
 - 1Password CLI (optional, for secrets management)
+
+**Note**: Node.js, Python, pnpm, and just are managed by mise and will be installed automatically.
 
 ### Quick Start
 
@@ -102,6 +102,13 @@ Built with [Payload CMS ecommerce template](./README-payload.md):
    ```bash
    git clone <repository-url>
    cd payload-ecommerce-lakehouse-demo
+
+   # Trust mise configuration to install development tools
+   mise trust
+   mise install
+
+   # View available tasks
+   just
 
    # Install dependencies
    pnpm install
@@ -114,13 +121,15 @@ Built with [Payload CMS ecommerce template](./README-payload.md):
    pnpm dev
    ```
 
+   **Note**: This project uses [just](https://github.com/casey/just) as a command runner. Run `just` without arguments to see all available recipes.
+
    See [README-payload.md](./README-payload.md) for detailed application setup.
 
 2. **Seed demo data:**
 
    ```bash
    # Generate sample ecommerce data
-   pnpm payload seed large
+   just seed
    ```
 
    See [docs/seed.md](./docs/seed.md) for seeding options and data volume.
@@ -129,6 +138,10 @@ Built with [Payload CMS ecommerce template](./README-payload.md):
 
    ```bash
    cd data/ingestion
+
+   # Setup environment
+   cp env.local.example .env.local
+   # Edit .env.local with your configuration
 
    # Install dependencies
    pip install -r requirements.txt
@@ -141,6 +154,10 @@ Built with [Payload CMS ecommerce template](./README-payload.md):
 
    ```bash
    cd data/transformation
+
+   # Setup environment
+   cp env.local.example .env.local
+   # Edit .env.local with your configuration
 
    # Install dependencies
    pip install -r requirements.txt
@@ -163,21 +180,20 @@ Built with [Payload CMS ecommerce template](./README-payload.md):
 
 ```plain
 .
-├── src/                    # Next.js application source
-│   ├── app/               # App router pages
-│   ├── collections/       # Payload CMS collections
-│   ├── components/        # React components
-│   └── plugins/           # Payload plugins (ecommerce, SEO, etc)
+├── src/                          # Next.js application source
+│   ├── app/                      # App router pages
+│   ├── collections/              # Payload CMS collections
+│   ├── components/               # React components
+│   └── plugins/                  # Payload plugins (ecommerce, SEO, etc)
 ├── data/
-│   ├── ingestion/         # dlt pipeline for data extraction
-│   └── transformation/    # dbt models for analytics
-├── docs/                  # Documentation
-│   ├── analysis_queries.md  # Sample SQL queries for analytics
-│   ├── seed.md           # Data seeding guide
-│   └── datastack-integration.md  # Lakehouse architecture
-├── public/                # Static assets
-├── tests/                 # Integration & E2E tests
-└── README-payload.md      # Original Payload CMS documentation
+│   ├── ingestion/                # dlt pipeline for data extraction
+│   └── transformation/           # dbt models for analytics
+├── docs/                         # Documentation
+│   ├── analysis_queries.md       # Sample SQL queries for analytics
+│   └── seed.md                   # Data seeding guide
+├── public/                       # Static assets
+├── tests/                        # Integration & E2E tests
+└── README-payload.md             # Original Payload CMS documentation
 ```
 
 ## buun-stack Integration
@@ -238,6 +254,11 @@ just dbt::op-run --target=prod      # Incremental models only
 - **MinIO**: S3-compatible object storage
 - **1Password CLI**: Secrets management
 
+### Development Tools
+
+- **mise**: Development tool version manager
+- **just**: Command runner for task management
+
 ## Documentation
 
 - 📖 [Application Setup](./README-payload.md) - Payload CMS ecommerce template guide
@@ -293,3 +314,5 @@ See [LICENSE](./LICENSE) for details.
 - [Apache Iceberg](https://iceberg.apache.org/)
 - [Trino Documentation](https://trino.io/docs/current/)
 - [buun-stack](https://github.com/buun-ch/buun-stack)
+- [mise](https://mise.jdx.dev/) - Development tool version manager
+- [just](https://github.com/casey/just) - Command runner
