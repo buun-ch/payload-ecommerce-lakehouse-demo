@@ -28,11 +28,15 @@ PAYLOAD_CMS_URL="http://localhost:3000/api"
 PAYLOAD_CMS_TOKEN=""  # JWT token from Payload CMS (required for protected collections)
 
 # Pipeline Configuration
-WRITE_DISPOSITION="replace"  # "replace" for full refresh (default), "merge" for incremental
-# PIPELINE_MODE="debug"      # Uncomment for DuckDB testing
+WRITE_DISPOSITION="merge"  # "merge" for incremental (default), "replace" for full refresh
+# PIPELINE_MODE="debug"     # Uncomment for DuckDB testing
 
-# For incremental loading, set WRITE_DISPOSITION="merge" and optionally configure:
+# For incremental loading (default):
 # INITIAL_TIMESTAMP="2024-01-01T00:00:00Z"  # Used only for first run. Default is fine for most cases.
+
+# WARNING: Do NOT use "replace" mode with paginated sources!
+# The REST API streams pages one by one, and "replace" will overwrite data on each page,
+# keeping only the last page. Use "merge" instead to collect all pages correctly.
 ```
 
 #### Using 1Password (op run)
@@ -45,25 +49,27 @@ ICEBERG_TOKEN="op://Personal/lakekeeper token/credential"
 PAYLOAD_CMS_TOKEN="op://Personal/Payload ecommerce/credential"
 ```
 
-Then run with `op run` (automatically used by `just op-run`):
+Then run with `op run` (automatically used by `just dlt::op-run`):
 
 ```bash
-just op-run  # Runs: op run --env-file=.env.local -- python payload_pipeline.py
+# From the ecommerce root directory
+just dlt::op-run  # Runs: op run --env-file=.env.local -- python payload_pipeline.py
 ```
 
 #### Alternative: Run without 1Password
 
-If you're not using 1Password, use `just run` instead:
+If you're not using 1Password, use `just dlt::run` instead:
 
 ```bash
-just run  # Runs: source .env.local && python payload_pipeline.py
+# From the ecommerce root directory
+just dlt::run  # Runs: source .env.local && python payload_pipeline.py
 ```
 
 #### Getting a JWT Token Manually
 
 ```bash
 # From the ecommerce root directory
-just get-jwt
+just payload::get-jwt
 # Copy the output token and set it in .env.local
 ```
 
@@ -71,26 +77,29 @@ just get-jwt
 
 ## Usage
 
-The pipeline has a single `load()` function that can be configured via environment variables:
+The pipeline has a single `load()` function that can be configured via environment variables.
 
-### Full Refresh Load (Default)
+**Note:** All commands should be run from the **ecommerce root directory** using the `just dlt::` prefix.
 
-Replace all data in Iceberg tables:
+### Incremental Load (Default)
+
+The default mode uses `merge` write disposition, which works correctly with paginated REST APIs:
 
 ```bash
 # From the ecommerce root directory
-just op-run
+just dlt::op-run
 
-# Or with explicit configuration
-WRITE_DISPOSITION=replace just op-run
+# First run: loads all data from INITIAL_TIMESTAMP
+# Subsequent runs: loads only new/updated records
 ```
 
-### Incremental Load
+### Full Refresh Load
 
-Load only new/updated records since last run:
+To reload all data from scratch, clear the pipeline state first:
 
 ```bash
-WRITE_DISPOSITION=merge just op-run
+just dlt::clear    # Clear pipeline state
+just dlt::op-run   # Loads all data from INITIAL_TIMESTAMP
 ```
 
 ### Debug Mode (DuckDB Testing)
@@ -98,7 +107,7 @@ WRITE_DISPOSITION=merge just op-run
 For testing without Iceberg:
 
 ```bash
-PIPELINE_MODE=debug just op-run
+PIPELINE_MODE=debug just dlt::op-run
 ```
 
 ## Environment Variables Reference
@@ -108,7 +117,7 @@ PIPELINE_MODE=debug just op-run
 | Variable | Values | Default | Description |
 |----------|--------|---------|-------------|
 | `PIPELINE_MODE` | `production`, `debug` | `production` | Use `debug` to load to DuckDB for testing |
-| `WRITE_DISPOSITION` | `replace`, `merge`, `append`, `skip` | `replace` | Data write strategy (see below) |
+| `WRITE_DISPOSITION` | `merge`, `replace`, `append`, `skip` | `merge` | Data write strategy (see below). **Default is `merge`** because paginated REST API sources stream pages incrementally. |
 | `INITIAL_TIMESTAMP` | ISO 8601 timestamp | `2024-01-01T00:00:00Z` | Starting point for **first** incremental run only. Subsequent runs ignore this and use dlt's saved state. |
 
 ### Payload CMS Configuration
@@ -130,12 +139,25 @@ PIPELINE_MODE=debug just op-run
 
 ### Write Disposition Modes
 
+- **`merge`** (default): Delete rows matching primary keys, then append new data (upsert)
+  - ✅ **Recommended for paginated REST API sources** (like Payload CMS)
+  - Works correctly with incremental page streaming
+  - Safe for both full refresh and incremental loads
+
 - **`replace`**: Delete all existing data, then append new data (full refresh)
-- **`merge`**: Delete rows matching primary keys, then append new data (upsert)
+  - ⚠️ **NOT compatible with paginated sources!**
+  - `rest_api_source` yields pages one by one, and `replace` overwrites on each page
+  - Result: Only the last page remains in the table
+  - Only use this with non-paginated sources or sources that buffer all data first
+
 - **`append`**: Simply append new data without deletion
+  - May create duplicates if same records are loaded multiple times
+
 - **`skip`**: Skip loading if table already exists
 
 ### Incremental Loading with `merge` Mode
+
+**`merge` mode is the default** because it works correctly with paginated REST API sources and supports both full refresh and incremental loading.
 
 When using `WRITE_DISPOSITION=merge`, dlt automatically manages incremental loading:
 
@@ -154,52 +176,58 @@ When using `WRITE_DISPOSITION=merge`, dlt automatically manages incremental load
 **Key Points:**
 
 - ✅ **No manual tracking required** - dlt manages the state automatically
-- ✅ **Same command every time** - `just op-run` works for all runs
+- ✅ **Same command every time** - `just dlt::op-run` works for all runs
 - ✅ **State persisted** - Stored in `~/.dlt/pipelines/payload_to_iceberg/state/`
-- ⚠️ **Reset when needed** - Run `just clear-pipeline` to start fresh from `INITIAL_TIMESTAMP`
+- ✅ **Works with pagination** - Correctly collects all pages from the REST API
+- ⚠️ **Reset when needed** - Run `just dlt::clear` to start fresh from `INITIAL_TIMESTAMP`
 
-**Production Setup Example:**
+**Default Configuration (Recommended):**
 
-For daily incremental loads, update `.env.local`:
+The default `.env.local` configuration works for both development and production:
 
 ```bash
-WRITE_DISPOSITION="merge"  # Enable incremental mode
+WRITE_DISPOSITION="merge"  # Default - safe for all scenarios
 # INITIAL_TIMESTAMP="2024-01-01T00:00:00Z"  # Optional: defaults to 2024-01-01
 ```
 
-Then run the same command every day (or via cron/Airflow):
+**For Production (Incremental Loads):**
+
+Run the same command every day (or via cron/Airflow):
 
 ```bash
-just op-run  # Day 1: loads all data since INITIAL_TIMESTAMP
-just op-run  # Day 2+: loads only new/updated records
+just dlt::op-run  # Day 1: loads all data since INITIAL_TIMESTAMP
+just dlt::op-run  # Day 2+: loads only new/updated records
 ```
 
-**Development/Testing:**
+**For Development (Full Refresh Testing):**
 
-Keep the default for ad-hoc testing:
+Use `merge` mode with state reset:
 
 ```bash
-WRITE_DISPOSITION="replace"  # Full refresh every time (safe for testing)
+just dlt::clear    # Clear pipeline state
+just dlt::op-run   # Loads all data from INITIAL_TIMESTAMP
 ```
 
 ## Running the Pipeline
+
+**Note:** All commands should be run from the **ecommerce root directory** using the `just dlt::` prefix.
 
 ### With 1Password (Recommended)
 
 When using 1Password references in `.env.local`:
 
 ```bash
-# Full refresh (default)
-just op-run
+# Incremental load (default - merge mode)
+just dlt::op-run
 
-# Incremental load
-WRITE_DISPOSITION=merge just op-run
+# Full refresh (clear state first)
+just dlt::clear && just dlt::op-run
 
-# Incremental load with custom start date
-WRITE_DISPOSITION=merge INITIAL_TIMESTAMP="2025-01-01T00:00:00Z" just op-run
+# Incremental load with custom start date (first run only)
+INITIAL_TIMESTAMP="2025-01-01T00:00:00Z" just dlt::op-run
 
 # Debug with DuckDB
-PIPELINE_MODE=debug just op-run
+PIPELINE_MODE=debug just dlt::op-run
 ```
 
 ### Without 1Password
@@ -207,30 +235,32 @@ PIPELINE_MODE=debug just op-run
 When using plain values in `.env.local`:
 
 ```bash
-# Full refresh (default)
-just run
+# Incremental load (default - merge mode)
+just dlt::run
 
-# Incremental load
-WRITE_DISPOSITION=merge just run
+# Full refresh (clear state first)
+just dlt::clear && just dlt::run
 
-# Incremental load with custom start date
-WRITE_DISPOSITION=merge INITIAL_TIMESTAMP="2025-01-01T00:00:00Z" just run
+# Incremental load with custom start date (first run only)
+INITIAL_TIMESTAMP="2025-01-01T00:00:00Z" just dlt::run
 
 # Debug with DuckDB
-PIPELINE_MODE=debug just run
+PIPELINE_MODE=debug just dlt::run
 ```
 
 ### Direct Python Execution
 
+From the `data/ingestion` directory:
+
 ```bash
-# Full refresh to Iceberg
+# Incremental load (default - merge mode)
 python payload_pipeline.py
 
-# Incremental load to Iceberg
-WRITE_DISPOSITION=merge python payload_pipeline.py
+# Full refresh (clear state first)
+just clear && python payload_pipeline.py
 
-# Incremental load with custom start date
-WRITE_DISPOSITION=merge INITIAL_TIMESTAMP="2025-01-01T00:00:00Z" python payload_pipeline.py
+# Incremental load with custom start date (first run only)
+INITIAL_TIMESTAMP="2025-01-01T00:00:00Z" python payload_pipeline.py
 
 # Debug mode with DuckDB
 PIPELINE_MODE=debug python payload_pipeline.py

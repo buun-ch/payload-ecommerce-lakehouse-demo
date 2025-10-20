@@ -13,6 +13,13 @@ from dlt.common.pipeline import LoadInfo
 from destinations.iceberg_rest import iceberg_rest_catalog
 from sources.payload_cms import payload_cms_incremental, payload_cms_source
 
+# Enable debug logging for dlt and REST client
+# import logging
+# logging.basicConfig(level=logging.DEBUG, force=True)
+# logging.getLogger("dlt").setLevel(logging.DEBUG)
+# logging.getLogger("dlt.sources.helpers.rest_client").setLevel(logging.DEBUG)
+# logging.getLogger("urllib3").setLevel(logging.DEBUG)
+
 # Type alias for write disposition
 TWriteDisposition = Literal["skip", "append", "replace", "merge"]
 
@@ -117,7 +124,7 @@ def load() -> LoadInfo:
             base_url=base_url,
             collections=collections,
             auth_token=auth_token,
-            limit=100,
+            limit=1000,  # Increased to reduce pagination (3 pages for 3000 records)
             depth=2,
         )
 
@@ -127,7 +134,8 @@ def load() -> LoadInfo:
         dataset_name="ecommerce",
     )
 
-    # Run with explicit write_disposition to override source settings
+    # Run with explicit write_disposition
+    # For replace mode: dlt should collect all pages first, then replace the table
     load_info = pipeline.run(source, write_disposition=write_disposition)
     print(load_info)
     return load_info
@@ -185,10 +193,13 @@ def get_write_disposition() -> TWriteDisposition:
 
     Notes
     -----
-    Reads from WRITE_DISPOSITION environment variable, defaults to "replace".
+    Reads from WRITE_DISPOSITION environment variable, defaults to "merge".
     Valid values are: skip, append, replace, merge
+
+    Note: Default is "merge" because rest_api_source streams pages one by one,
+    and "replace" would replace the table on each page, keeping only the last page.
     """
-    env_value = os.getenv("WRITE_DISPOSITION", "replace")
+    env_value = os.getenv("WRITE_DISPOSITION", "merge")
     valid_dispositions: tuple[TWriteDisposition, ...] = (
         "skip",
         "append",

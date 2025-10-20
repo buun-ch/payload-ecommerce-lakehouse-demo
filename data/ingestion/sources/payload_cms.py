@@ -6,6 +6,8 @@ This module provides pre-configured sources for Payload CMS ecommerce data.
 
 from typing import Any, List, Optional
 
+import dlt
+from dlt.sources.helpers.rest_client import RESTClient
 from dlt.sources.helpers.rest_client.auth import BearerTokenAuth
 from dlt.sources.helpers.rest_client.paginators import PageNumberPaginator
 from dlt.sources.rest_api import rest_api_source
@@ -100,15 +102,9 @@ def payload_cms_source(
                         "depth": depth,
                         "sort": "createdAt",
                     },
-                    "paginator": PageNumberPaginator(
-                        base_page=1,  # Payload CMS pages start at 1, not 0
-                        page_param="page",
-                        total_path="totalPages",
-                        maximum_page=10000,
-                    ),
                     "data_selector": "docs",
                 },
-                "write_disposition": "replace",  # Can be changed to "merge" for incremental
+                # write_disposition is set at pipeline.run() level, not here
                 "primary_key": "id",
             }
         )
@@ -117,6 +113,17 @@ def payload_cms_source(
         "client": {
             "base_url": base_url,
             "auth": auth_config,
+        },
+        "resource_defaults": {
+            "endpoint": {
+                "paginator": {
+                    "type": "page_number",
+                    "base_page": 1,
+                    "page_param": "page",
+                    "total_path": "totalPages",
+                    "maximum_page": 10000,
+                },
+            },
         },
         "resources": resources,  # type: ignore[typeddict-item]
     }
@@ -216,15 +223,9 @@ def payload_cms_incremental(
                             "initial_value": initial_timestamp,
                         },
                     },
-                    "paginator": PageNumberPaginator(
-                        base_page=1,  # Payload CMS pages start at 1, not 0
-                        page_param="page",
-                        total_path="totalPages",
-                        maximum_page=10000,
-                    ),
                     "data_selector": "docs",
                 },
-                "write_disposition": "merge",  # Merge for incremental updates
+                # write_disposition is set at pipeline.run() level, not here
                 "primary_key": "id",
             }
         )
@@ -233,6 +234,17 @@ def payload_cms_incremental(
         "client": {
             "base_url": base_url,
             "auth": auth_config,
+        },
+        "resource_defaults": {
+            "endpoint": {
+                "paginator": {
+                    "type": "page_number",
+                    "base_page": 1,
+                    "page_param": "page",
+                    "total_path": "totalPages",
+                    "maximum_page": 10000,
+                },
+            },
         },
         "resources": resources,  # type: ignore[typeddict-item]
     }
