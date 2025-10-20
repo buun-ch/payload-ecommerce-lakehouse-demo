@@ -30,8 +30,10 @@ export async function generateCarts(
   payload.logger.info(`Generating ${count} carts (28% abandonment rate)...`)
 
   const carts: Cart[] = []
-  const startDate = new Date('2024-01-01')
-  const endDate = new Date('2024-12-31')
+  // Generate carts from past 300 days to today
+  const endDate = new Date()
+  const startDate = new Date()
+  startDate.setDate(startDate.getDate() - 300)
 
   let abandonedCount = 0
   let guestCount = 0

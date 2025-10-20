@@ -41,8 +41,10 @@ export async function generateOrders(
   payload.logger.info(`Generating ${count} orders with Pareto distribution...`)
 
   const orders: Order[] = []
-  const startDate = new Date('2024-01-01')
-  const endDate = new Date('2024-12-31')
+  // Generate orders from past 300 days to today for realistic RFM analysis
+  const endDate = new Date()
+  const startDate = new Date()
+  startDate.setDate(startDate.getDate() - 300)
 
   for (let i = 0; i < count; i++) {
     // Select random customer

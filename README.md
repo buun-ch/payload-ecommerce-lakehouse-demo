@@ -126,11 +126,13 @@ Built with [Payload CMS ecommerce template](./README-payload.md):
 2. **Seed demo data:**
 
    ```bash
+   # Set Pexels API key for product images
+   export PEXELS_API_KEY="..."
    # Generate sample ecommerce data
-   just seed
+   just pyaload::seed
    ```
 
-   See [docs/seed.md](./docs/seed.md) for seeding options and data volume.
+   See [docs/spyaload::eed.md](./docs/seed.md) for seeding options and data volume.
 
 3. **Ingest data to lakehouse:**
 
@@ -279,9 +281,9 @@ A **lakehouse** combines the best of data lakes and data warehouses:
 
 Data flows through three layers:
 
-1. **Bronze** (Raw): Data from Payload CMS API → Iceberg
-2. **Silver** (Staging): Cleaned & standardized → dbt staging views
-3. **Gold** (Marts): Analytics-ready star schema → dbt marts tables
+1. **Raw**: Data from Payload CMS API → Iceberg
+2. **Staging**: Cleaned & standardized → dbt staging views
+3. **Marts**: Analytics-ready star schema → dbt marts tables
 
 ### Incremental Processing
 
