@@ -55,8 +55,6 @@ export async function generateOrders(
   const maxAttempts = count * 3 // Safety limit to prevent infinite loops
 
   while (generatedCount < count && attempts < maxAttempts) {
-    attempts++
-
     // Select random customer
     const customer = faker.helpers.arrayElement(context.customers)
     const segment = customer._segment
@@ -109,7 +107,7 @@ export async function generateOrders(
       })
     }
 
-    // Skip if no items generated
+    // Skip if no items generated (don't count as attempt)
     if (items.length === 0) {
       continue
     }
@@ -118,9 +116,14 @@ export async function generateOrders(
     const createdAt = generateRecentDateWithWeekendBias(startDate, endDate)
 
     // Skip if date is in the future (beyond today)
+    // Don't count this as an attempt since we intentionally generate future dates
+    // to prevent concentration on the final day
     if (createdAt > today) {
       continue
     }
+
+    // Count this as a valid attempt (date is in valid range)
+    attempts++
 
     // Determine order status
     const status = weightedChoice(ORDER_STATUS)

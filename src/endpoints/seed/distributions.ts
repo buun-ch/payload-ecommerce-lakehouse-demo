@@ -761,21 +761,17 @@ export function getVolumeMultiplier(date: Date): number {
  * More recent dates are more likely
  */
 export function generateRecentDate(from: Date, to: Date): Date {
-  // Use exponential distribution to bias towards recent dates
+  // Use power distribution to bias towards recent dates
+  // Power of 2 gives moderate bias, higher powers give stronger bias
   const fromTime = from.getTime()
   const toTime = to.getTime()
   const range = toTime - fromTime
 
-  // Exponential distribution parameter (higher = more past bias, lower = more recent bias)
-  // Lambda = 1 provides moderate recent bias with good distribution
-  const lambda = 1
-
-  // Generate exponentially distributed random number (0 to 1)
+  // Generate random number with power distribution
+  // uniform^2 biases toward 0, so (1 - uniform^2) biases toward 1 (recent)
   const uniform = Math.random()
-  const exponential = -Math.log(1 - uniform) / lambda
+  const normalized = 1 - uniform * uniform  // Square gives moderate recent bias
 
-  // Clamp to [0, 1] and REVERSE to bias towards recent (higher values = more recent)
-  const normalized = 1 - Math.min(exponential, 1)
   const timestamp = fromTime + range * normalized
 
   return new Date(timestamp)
