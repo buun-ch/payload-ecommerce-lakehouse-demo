@@ -10,11 +10,13 @@ Marts Layer (Star Schema):
 │   ├── fact_orders - Order-level transactions
 │   ├── fact_order_items - Line item details
 │   └── fact_transactions - Payment transactions
-└── Dimension Tables
-    ├── dim_products - Product catalog
-    ├── dim_categories - Product categories
-    ├── dim_customers - Customer profiles with metrics
-    └── dim_date - Date dimension (2020-2030)
+├── Dimension Tables
+│   ├── dim_products - Product catalog
+│   ├── dim_categories - Product categories
+│   ├── dim_customers - Customer profiles with metrics
+│   └── dim_date - Date dimension (2020-2030)
+└── Bridge Tables
+    └── bridge_product_categories - Many-to-many product-category relationships
 ```
 
 ## 1. Sales Performance Analysis
@@ -91,9 +93,18 @@ GROUP BY CASE WHEN d.is_weekend THEN 'Weekend' ELSE 'Weekday' END;
 ### 2.1 Top 10 Best Selling Products
 
 ```sql
+WITH product_categories AS (
+    SELECT
+        pc.product_id,
+        ARRAY_JOIN(ARRAY_AGG(c.category_name), ', ') AS category_names
+    FROM ecommerce_marts.bridge_product_categories pc
+    JOIN ecommerce_marts.dim_categories c
+        ON pc.category_id = c.category_id
+    GROUP BY pc.product_id
+)
 SELECT
     p.product_name,
-    c.category_name,
+    COALESCE(pc.category_names, 'Uncategorized') AS categories,
     COUNT(DISTINCT oi.order_id) AS times_ordered,
     SUM(oi.quantity) AS total_quantity_sold,
     SUM(oi.line_total_usd) AS total_revenue_usd,
@@ -101,9 +112,9 @@ SELECT
 FROM ecommerce_marts.fact_order_items oi
 JOIN ecommerce_marts.dim_products p
     ON oi.product_id = p.product_id
-LEFT JOIN ecommerce_marts.dim_categories c
-    ON p.category_id = c.category_id
-GROUP BY p.product_name, c.category_name
+LEFT JOIN product_categories pc
+    ON p.product_id = pc.product_id
+GROUP BY p.product_name, pc.category_names
 ORDER BY total_revenue_usd DESC
 LIMIT 10;
 ```
@@ -124,11 +135,10 @@ SELECT
     SUM(oi.line_total_usd) AS total_revenue_usd,
     ROUND(AVG(oi.line_total_usd), 2) AS avg_line_value_usd
 FROM ecommerce_marts.fact_order_items oi
-JOIN ecommerce_marts.dim_products p
-    ON oi.product_id = p.product_id
-LEFT JOIN ecommerce_marts.dim_categories c
-    ON p.category_id = c.category_id
-WHERE c.category_name IS NOT NULL
+JOIN ecommerce_marts.bridge_product_categories pc
+    ON oi.product_id = pc.product_id
+JOIN ecommerce_marts.dim_categories c
+    ON pc.category_id = c.category_id
 GROUP BY c.category_name
 ORDER BY total_revenue_usd DESC;
 ```
@@ -142,16 +152,25 @@ ORDER BY total_revenue_usd DESC;
 ### 2.3 Inventory Alert - Low Stock Products
 
 ```sql
+WITH product_categories AS (
+    SELECT
+        pc.product_id,
+        ARRAY_JOIN(ARRAY_AGG(c.category_name), ', ') AS category_names
+    FROM ecommerce_marts.bridge_product_categories pc
+    JOIN ecommerce_marts.dim_categories c
+        ON pc.category_id = c.category_id
+    GROUP BY pc.product_id
+)
 SELECT
     p.product_name,
-    c.category_name,
+    COALESCE(pc.category_names, 'Uncategorized') AS categories,
     p.inventory,
     p.price_usd,
     p.is_low_stock,
     p.is_in_stock
 FROM ecommerce_marts.dim_products p
-LEFT JOIN ecommerce_marts.dim_categories c
-    ON p.category_id = c.category_id
+LEFT JOIN product_categories pc
+    ON p.product_id = pc.product_id
 WHERE p.is_low_stock = TRUE OR p.is_in_stock = FALSE
 ORDER BY p.inventory ASC;
 ```
