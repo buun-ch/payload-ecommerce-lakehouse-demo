@@ -28,35 +28,42 @@ SELECT
     COUNT(DISTINCT o.order_id) AS total_orders,
     SUM(o.amount_usd) AS total_revenue_usd,
     AVG(o.amount_usd) AS avg_order_value_usd
-FROM iceberg.ecommerce_marts.fact_orders o
-JOIN iceberg.ecommerce_marts.dim_date d
+FROM ecommerce_marts.fact_orders o
+JOIN ecommerce_marts.dim_date d
     ON CAST(o.order_date AS DATE) = d.date_day
 WHERE d.date_day >= CURRENT_DATE - INTERVAL '30' DAY
 GROUP BY d.date_day, d.day_name
 ORDER BY d.date_day DESC;
 ```
 
-**Use in Metabase**: Line chart showing revenue trend over time
+**Visualization**:
+
+- Type: Line chart
+- X-axis: `date_day`
+- Y-axis: `total_revenue_usd` (can also add `total_orders` as secondary series)
 
 ### 1.2 Monthly Revenue Summary
 
 ```sql
 SELECT
-    d.year,
-    d.month,
+    DATE_FORMAT(d.date_day, '%Y-%m') AS year_month,
     COUNT(DISTINCT o.order_id) AS total_orders,
     COUNT(DISTINCT o.customer_id) AS unique_customers,
     SUM(o.amount_usd) AS total_revenue_usd,
     ROUND(AVG(o.amount_usd), 2) AS avg_order_value_usd,
     ROUND(SUM(o.amount_usd) / CAST(COUNT(DISTINCT o.customer_id) AS DOUBLE), 2) AS revenue_per_customer
-FROM iceberg.ecommerce_marts.fact_orders o
-JOIN iceberg.ecommerce_marts.dim_date d
+FROM ecommerce_marts.fact_orders o
+JOIN ecommerce_marts.dim_date d
     ON CAST(o.order_date AS DATE) = d.date_day
-GROUP BY d.year, d.month
-ORDER BY d.year DESC, d.month DESC;
+GROUP BY DATE_FORMAT(d.date_day, '%Y-%m')
+ORDER BY year_month DESC;
 ```
 
-**Use in Metabase**: Table or bar chart for monthly performance
+**Visualization**:
+
+- Type: Bar chart (or table)
+- X-axis: `year` and `month` (combine as "YYYY-MM" or use both fields)
+- Y-axis: `total_revenue_usd`
 
 ### 1.3 Weekend vs Weekday Sales
 
@@ -66,14 +73,18 @@ SELECT
     COUNT(DISTINCT o.order_id) AS total_orders,
     SUM(o.amount_usd) AS total_revenue_usd,
     ROUND(AVG(o.amount_usd), 2) AS avg_order_value_usd
-FROM iceberg.ecommerce_marts.fact_orders o
-JOIN iceberg.ecommerce_marts.dim_date d
+FROM ecommerce_marts.fact_orders o
+JOIN ecommerce_marts.dim_date d
     ON CAST(o.order_date AS DATE) = d.date_day
 WHERE d.date_day >= CURRENT_DATE - INTERVAL '90' DAY
 GROUP BY CASE WHEN d.is_weekend THEN 'Weekend' ELSE 'Weekday' END;
 ```
 
-**Use in Metabase**: Pie chart or comparison bar chart
+**Visualization**:
+
+- Type: Pie chart or bar chart
+- Pie chart: Dimension: `period_type`, Metric: `total_revenue_usd`
+- Bar chart: X-axis: `period_type`, Y-axis: `total_revenue_usd`
 
 ## 2. Product Analysis
 
@@ -87,17 +98,21 @@ SELECT
     SUM(oi.quantity) AS total_quantity_sold,
     SUM(oi.line_total_usd) AS total_revenue_usd,
     ROUND(AVG(oi.unit_price_usd), 2) AS avg_unit_price_usd
-FROM iceberg.ecommerce_marts.fact_order_items oi
-JOIN iceberg.ecommerce_marts.dim_products p
+FROM ecommerce_marts.fact_order_items oi
+JOIN ecommerce_marts.dim_products p
     ON oi.product_id = p.product_id
-LEFT JOIN iceberg.ecommerce_marts.dim_categories c
+LEFT JOIN ecommerce_marts.dim_categories c
     ON p.category_id = c.category_id
 GROUP BY p.product_name, c.category_name
 ORDER BY total_revenue_usd DESC
 LIMIT 10;
 ```
 
-**Use in Metabase**: Horizontal bar chart
+**Visualization**:
+
+- Type: Horizontal bar chart
+- X-axis: `total_revenue_usd`
+- Y-axis: `product_name`
 
 ### 2.2 Category Performance
 
@@ -108,17 +123,21 @@ SELECT
     SUM(oi.quantity) AS items_sold,
     SUM(oi.line_total_usd) AS total_revenue_usd,
     ROUND(AVG(oi.line_total_usd), 2) AS avg_line_value_usd
-FROM iceberg.ecommerce_marts.fact_order_items oi
-JOIN iceberg.ecommerce_marts.dim_products p
+FROM ecommerce_marts.fact_order_items oi
+JOIN ecommerce_marts.dim_products p
     ON oi.product_id = p.product_id
-LEFT JOIN iceberg.ecommerce_marts.dim_categories c
+LEFT JOIN ecommerce_marts.dim_categories c
     ON p.category_id = c.category_id
 WHERE c.category_name IS NOT NULL
 GROUP BY c.category_name
 ORDER BY total_revenue_usd DESC;
 ```
 
-**Use in Metabase**: Treemap or donut chart
+**Visualization**:
+
+- Type: Treemap or donut chart
+- Treemap: Dimension: `category_name`, Metric: `total_revenue_usd`
+- Donut chart: Dimension: `category_name`, Metric: `total_revenue_usd`
 
 ### 2.3 Inventory Alert - Low Stock Products
 
@@ -130,14 +149,17 @@ SELECT
     p.price_usd,
     p.is_low_stock,
     p.is_in_stock
-FROM iceberg.ecommerce_marts.dim_products p
-LEFT JOIN iceberg.ecommerce_marts.dim_categories c
+FROM ecommerce_marts.dim_products p
+LEFT JOIN ecommerce_marts.dim_categories c
     ON p.category_id = c.category_id
 WHERE p.is_low_stock = TRUE OR p.is_in_stock = FALSE
 ORDER BY p.inventory ASC;
 ```
 
-**Use in Metabase**: Alert dashboard widget
+**Visualization**:
+
+- Type: Table
+- Display all columns for detailed alert view
 
 ## 3. Customer Analysis
 
@@ -151,12 +173,15 @@ SELECT
     ROUND(SUM(lifetime_value_usd), 2) AS total_ltv_usd,
     ROUND(AVG(lifetime_value_usd), 2) AS avg_ltv_usd,
     ROUND(AVG(total_orders), 2) AS avg_orders_per_customer
-FROM iceberg.ecommerce_marts.dim_customers
+FROM ecommerce_marts.dim_customers
 GROUP BY customer_segment
 ORDER BY total_ltv_usd DESC;
 ```
 
-**Use in Metabase**: Stacked bar chart or table
+**Visualization**:
+
+- Type: Bar chart (stacked or grouped) or table
+- Bar chart: X-axis: `customer_segment`, Y-axis: `total_ltv_usd` or `customer_count`
 
 ### 3.2 Top 20 Customers by Lifetime Value
 
@@ -170,12 +195,15 @@ SELECT
     CAST(first_order_date AS DATE) AS first_order_date,
     CAST(last_order_date AS DATE) AS last_order_date,
     customer_lifetime_days
-FROM iceberg.ecommerce_marts.dim_customers
+FROM ecommerce_marts.dim_customers
 ORDER BY lifetime_value_usd DESC
 LIMIT 20;
 ```
 
-**Use in Metabase**: Table with customer details
+**Visualization**:
+
+- Type: Table
+- Display all columns for customer details
 
 ### 3.3 Customer Acquisition by Month
 
@@ -186,12 +214,16 @@ SELECT
     SUM(total_orders) AS total_orders_from_cohort,
     ROUND(SUM(lifetime_value_usd), 2) AS cohort_ltv_usd,
     ROUND(AVG(lifetime_value_usd), 2) AS avg_customer_ltv_usd
-FROM iceberg.ecommerce_marts.dim_customers
+FROM ecommerce_marts.dim_customers
 GROUP BY DATE_FORMAT(customer_since, '%Y-%m')
 ORDER BY acquisition_month DESC;
 ```
 
-**Use in Metabase**: Area chart for cohort analysis
+**Visualization**:
+
+- Type: Area chart or line chart
+- X-axis: `acquisition_month`
+- Y-axis: `new_customers` (can add `cohort_ltv_usd` as secondary series)
 
 ## 4. Transaction & Payment Analysis
 
@@ -203,12 +235,16 @@ SELECT
     COUNT(*) AS transaction_count,
     ROUND(SUM(amount_usd), 2) AS total_amount_usd,
     ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER (), 2) AS percentage
-FROM iceberg.ecommerce_marts.fact_transactions
+FROM ecommerce_marts.fact_transactions
 GROUP BY status
 ORDER BY transaction_count DESC;
 ```
 
-**Use in Metabase**: Pie chart
+**Visualization**:
+
+- Type: Pie chart
+- Dimension: `status`
+- Metric: `transaction_count` or `total_amount_usd`
 
 ### 4.2 Daily Transaction Volume
 
@@ -219,15 +255,19 @@ SELECT
     SUM(CASE WHEN t.status = 'succeeded' THEN 1 ELSE 0 END) AS successful_transactions,
     SUM(CASE WHEN t.status = 'failed' THEN 1 ELSE 0 END) AS failed_transactions,
     ROUND(SUM(t.amount_usd), 2) AS total_amount_usd
-FROM iceberg.ecommerce_marts.fact_transactions t
-JOIN iceberg.ecommerce_marts.dim_date d
+FROM ecommerce_marts.fact_transactions t
+JOIN ecommerce_marts.dim_date d
     ON CAST(t.transaction_date AS DATE) = d.date_day
 WHERE d.date_day >= CURRENT_DATE - INTERVAL '30' DAY
 GROUP BY d.date_day
 ORDER BY d.date_day DESC;
 ```
 
-**Use in Metabase**: Line chart with multiple series
+**Visualization**:
+
+- Type: Line chart (multiple series)
+- X-axis: `date_day`
+- Y-axis: `transaction_count`, `successful_transactions`, `failed_transactions` (as separate series)
 
 ## 5. Advanced Analytics
 
@@ -238,7 +278,7 @@ WITH first_purchase AS (
     SELECT
         customer_id,
         MIN(CAST(order_date AS DATE)) AS first_order_date
-    FROM iceberg.ecommerce_marts.fact_orders
+    FROM ecommerce_marts.fact_orders
     GROUP BY customer_id
 ),
 cohort_orders AS (
@@ -249,7 +289,7 @@ cohort_orders AS (
         CAST(o.order_date AS DATE) AS order_date,
         DATE_DIFF('month', fp.first_order_date, CAST(o.order_date AS DATE)) AS months_since_first
     FROM first_purchase fp
-    JOIN iceberg.ecommerce_marts.fact_orders o
+    JOIN ecommerce_marts.fact_orders o
         ON fp.customer_id = o.customer_id
 )
 SELECT
@@ -268,7 +308,12 @@ GROUP BY cohort_month, months_since_first
 ORDER BY cohort_month DESC, months_since_first ASC;
 ```
 
-**Use in Metabase**: Heatmap for cohort retention visualization
+**Visualization**:
+
+- Type: Pivot table or heatmap
+- X-axis (columns): `months_since_first`
+- Y-axis (rows): `cohort_month`
+- Values: `retention_rate` (color-coded by percentage)
 
 ### 5.2 RFM Analysis (Recency, Frequency, Monetary)
 
@@ -281,7 +326,7 @@ WITH customer_rfm AS (
         DATE_DIFF('day', CAST(c.last_order_date AS DATE), CURRENT_DATE) AS recency_days,
         c.total_orders AS frequency,
         c.lifetime_value_usd AS monetary
-    FROM iceberg.ecommerce_marts.dim_customers c
+    FROM ecommerce_marts.dim_customers c
     WHERE c.total_orders > 0
 )
 SELECT
@@ -303,7 +348,11 @@ FROM customer_rfm
 ORDER BY monetary DESC;
 ```
 
-**Use in Metabase**: Scatter plot or table grouped by RFM segment
+**Visualization**:
+
+- Type: Scatter plot or table
+- Scatter plot: X-axis: `recency_days`, Y-axis: `monetary_usd`, Size: `frequency`, Color: `rfm_segment`
+- Table: Group by `rfm_segment`
 
 ### 5.3 Product Affinity Analysis
 
@@ -313,8 +362,8 @@ WITH product_pairs AS (
         oi1.product_id AS product_a_id,
         oi2.product_id AS product_b_id,
         COUNT(DISTINCT oi1.order_id) AS times_bought_together
-    FROM iceberg.ecommerce_marts.fact_order_items oi1
-    JOIN iceberg.ecommerce_marts.fact_order_items oi2
+    FROM ecommerce_marts.fact_order_items oi1
+    JOIN ecommerce_marts.fact_order_items oi2
         ON oi1.order_id = oi2.order_id
         AND oi1.product_id < oi2.product_id
     GROUP BY oi1.product_id, oi2.product_id
@@ -326,17 +375,21 @@ SELECT
     pp.times_bought_together,
     ROUND(
         pp.times_bought_together * 100.0 /
-        (SELECT COUNT(DISTINCT order_id) FROM iceberg.ecommerce_marts.fact_orders),
+        (SELECT COUNT(DISTINCT order_id) FROM ecommerce_marts.fact_orders),
         2
     ) AS frequency_percentage
 FROM product_pairs pp
-JOIN iceberg.ecommerce_marts.dim_products p1 ON pp.product_a_id = p1.product_id
-JOIN iceberg.ecommerce_marts.dim_products p2 ON pp.product_b_id = p2.product_id
+JOIN ecommerce_marts.dim_products p1 ON pp.product_a_id = p1.product_id
+JOIN ecommerce_marts.dim_products p2 ON pp.product_b_id = p2.product_id
 ORDER BY times_bought_together DESC
 LIMIT 20;
 ```
 
-**Use in Metabase**: Network diagram or table for product recommendations
+**Visualization**:
+
+- Type: Table (network diagrams not directly supported)
+- Display columns: `product_a`, `product_b`, `times_bought_together`, `frequency_percentage`
+- Use for product recommendation insights
 
 ## 6. KPI Dashboard Queries
 
@@ -349,7 +402,7 @@ WITH current_period AS (
         COUNT(DISTINCT customer_id) AS unique_customers,
         SUM(amount_usd) AS total_revenue,
         AVG(amount_usd) AS avg_order_value
-    FROM iceberg.ecommerce_marts.fact_orders
+    FROM ecommerce_marts.fact_orders
     WHERE order_date >= CURRENT_DATE - INTERVAL '30' DAY
 ),
 previous_period AS (
@@ -358,7 +411,7 @@ previous_period AS (
         COUNT(DISTINCT customer_id) AS unique_customers,
         SUM(amount_usd) AS total_revenue,
         AVG(amount_usd) AS avg_order_value
-    FROM iceberg.ecommerce_marts.fact_orders
+    FROM ecommerce_marts.fact_orders
     WHERE order_date >= CURRENT_DATE - INTERVAL '60' DAY
       AND order_date < CURRENT_DATE - INTERVAL '30' DAY
 )
@@ -391,7 +444,12 @@ SELECT
 FROM current_period cp, previous_period pp;
 ```
 
-**Use in Metabase**: Number cards with trend indicators
+**Visualization**:
+
+- Type: Number (scalar) cards
+- Create separate cards for each metric row
+- Display `current_value` with `growth_percentage` as trend indicator
+- Use color coding (green for positive growth, red for negative)
 
 ## Metabase Dashboard Recommendations
 
