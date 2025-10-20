@@ -100,12 +100,36 @@ export const ORDER_COUNTS: Record<CustomerSegment, { min: number; max: number }>
 export const CART_ABANDONMENT_RATE = 0.28
 
 /**
- * Inventory status distribution
+ * Inventory level types
  */
-export const INVENTORY_STATUS = [
-  { weight: 85, value: 'in_stock' },
-  { weight: 15, value: 'out_of_stock' },
+export type InventoryLevel = 'out_of_stock' | 'low_stock' | 'limited_stock' | 'normal_stock' | 'high_stock'
+
+/**
+ * Inventory status distribution with realistic levels
+ * - Out of stock (0): 10% - Products sold out
+ * - Low stock (1-10): 10% - Urgent reorder needed
+ * - Limited stock (11-50): 20% - Moderate availability
+ * - Normal stock (51-200): 40% - Healthy inventory
+ * - High stock (201-500): 20% - Overstocked or popular items
+ */
+export const INVENTORY_DISTRIBUTION = [
+  { weight: 10, value: 'out_of_stock' as InventoryLevel },
+  { weight: 10, value: 'low_stock' as InventoryLevel },
+  { weight: 20, value: 'limited_stock' as InventoryLevel },
+  { weight: 40, value: 'normal_stock' as InventoryLevel },
+  { weight: 20, value: 'high_stock' as InventoryLevel },
 ]
+
+/**
+ * Inventory quantity ranges by level
+ */
+export const INVENTORY_RANGES: Record<InventoryLevel, { min: number; max: number }> = {
+  out_of_stock: { min: 0, max: 0 },
+  low_stock: { min: 1, max: 10 },
+  limited_stock: { min: 11, max: 50 },
+  normal_stock: { min: 51, max: 200 },
+  high_stock: { min: 201, max: 500 },
+}
 
 /**
  * Products with variants enabled (40% have variants)
@@ -668,6 +692,20 @@ export function generateOrderAmount(segment: CustomerSegment): number {
 }
 
 /**
+ * Generate inventory quantity based on distribution
+ */
+export function generateInventory(): number {
+  const level = weightedChoice(INVENTORY_DISTRIBUTION)
+  const range = INVENTORY_RANGES[level]
+
+  if (range.min === range.max) {
+    return range.min
+  }
+
+  return faker.number.int(range)
+}
+
+/**
  * Check if cart should be abandoned
  */
 export function isCartAbandoned(): boolean {
@@ -728,16 +766,52 @@ export function generateRecentDate(from: Date, to: Date): Date {
   const toTime = to.getTime()
   const range = toTime - fromTime
 
-  // Exponential distribution parameter (higher = more recent bias)
-  const lambda = 2
+  // Exponential distribution parameter (higher = more past bias, lower = more recent bias)
+  // Lambda = 1 provides moderate recent bias with good distribution
+  const lambda = 1
 
   // Generate exponentially distributed random number (0 to 1)
   const uniform = Math.random()
   const exponential = -Math.log(1 - uniform) / lambda
 
-  // Clamp to [0, 1] and apply to date range
-  const normalized = Math.min(exponential, 1)
+  // Clamp to [0, 1] and REVERSE to bias towards recent (higher values = more recent)
+  const normalized = 1 - Math.min(exponential, 1)
   const timestamp = fromTime + range * normalized
 
   return new Date(timestamp)
+}
+
+/**
+ * Generate random date with weekend bias
+ * Weekends are 1.4x more likely to be selected (40% boost)
+ *
+ * This implements rejection sampling to achieve the desired weekend/weekday ratio:
+ * - Normal distribution: 5 weekdays, 2 weekend days (28.6% weekend)
+ * - With 1.4x boost: 35.9% weekend, 64.1% weekday
+ */
+export function generateRecentDateWithWeekendBias(from: Date, to: Date, weekendMultiplier: number = 1.4): Date {
+  // Maximum attempts to avoid infinite loops
+  const maxAttempts = 20
+
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const date = generateRecentDate(from, to)
+
+    // Weekend dates are always accepted
+    if (isWeekend(date)) {
+      return date
+    }
+
+    // Weekday dates are accepted with reduced probability to achieve the weekend boost
+    // Calculation: 5 weekdays / (5 weekdays + 2 weekend days * (multiplier - 1))
+    // For multiplier=1.4: 5 / (5 + 2*0.4) = 5 / 5.8 = 0.862
+    const weekdayAcceptanceProbability = 5 / (5 + 2 * (weekendMultiplier - 1))
+
+    if (Math.random() < weekdayAcceptanceProbability) {
+      return date
+    }
+    // Rejected, try again
+  }
+
+  // Fallback: return last generated date if max attempts reached
+  return generateRecentDate(from, to)
 }

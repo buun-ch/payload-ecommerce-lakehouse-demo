@@ -18,7 +18,7 @@
 
 import type { CollectionSlug, GlobalSlug, Payload, PayloadRequest } from 'payload'
 import type { Media } from '@/payload-types'
-import { getPreset, type SeedPreset } from './presets'
+import { getPreset, getPresetByName, type SeedPreset } from './presets'
 import { generateProducts } from './generators/products'
 import { generateCustomers } from './generators/customers'
 import { generateOrders } from './generators/orders'
@@ -69,7 +69,7 @@ export const enhancedSeed = async ({
 }): Promise<void> => {
   // Get preset configuration
   const presetName = preset || (process.env.SEED_PRESET as SeedPreset) || 'medium'
-  const config = getPreset()
+  const config = getPresetByName(presetName)
 
   payload.logger.info('='.repeat(80))
   payload.logger.info(`Starting enhanced seed: ${presetName.toUpperCase()} preset`)

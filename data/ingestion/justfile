@@ -5,19 +5,19 @@ default:
     @just --list --unsorted --list-submodules
 
 # Run the dlt pipeline script directly
-run: check-venv
+run *args: check-venv
     #!/bin/bash
     set -euo pipefail
     source .venv/bin/activate
     source .env.local
-    python payload_pipeline.py
+    python payload_pipeline.py {{ args }}
 
 # Run the dlt pipeline script with `op run`
-op-run: check-venv
+op-run *args: check-venv
     #!/bin/bash
     set -euo pipefail
     source .venv/bin/activate
-    op run --env-file=.env.local -- python payload_pipeline.py
+    op run --env-file=.env.local -- python payload_pipeline.py {{ args }}
 
 # Check if Iceberg tables exist and have data
 check-tables: check-venv

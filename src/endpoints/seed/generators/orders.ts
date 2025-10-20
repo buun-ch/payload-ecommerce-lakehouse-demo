@@ -16,7 +16,7 @@ import type { Order, Product, Transaction } from '@/payload-types'
 import {
   weightedChoice,
   generateOrderAmount,
-  generateRecentDate,
+  generateRecentDateWithWeekendBias,
   ORDER_PRODUCT_SELECTION,
   ORDER_STATUS,
   type ProductPopularity,
@@ -41,12 +41,22 @@ export async function generateOrders(
   payload.logger.info(`Generating ${count} orders with Pareto distribution...`)
 
   const orders: Order[] = []
-  // Generate orders from past 300 days to today for realistic RFM analysis
+  // Generate orders from past 500 days to future 60 days, then filter to today
+  // This prevents concentration of orders on the current day
+  const today = new Date()
+  today.setHours(0, 0, 0, 0) // Start of today
   const endDate = new Date()
+  endDate.setDate(endDate.getDate() + 60) // 60 days in future
   const startDate = new Date()
-  startDate.setDate(startDate.getDate() - 300)
+  startDate.setDate(startDate.getDate() - 500)
 
-  for (let i = 0; i < count; i++) {
+  let generatedCount = 0
+  let attempts = 0
+  const maxAttempts = count * 3 // Safety limit to prevent infinite loops
+
+  while (generatedCount < count && attempts < maxAttempts) {
+    attempts++
+
     // Select random customer
     const customer = faker.helpers.arrayElement(context.customers)
     const segment = customer._segment
@@ -101,12 +111,16 @@ export async function generateOrders(
 
     // Skip if no items generated
     if (items.length === 0) {
-      payload.logger.warn(`No items generated for order ${i}`)
       continue
     }
 
-    // Generate order date with recency bias
-    const createdAt = generateRecentDate(startDate, endDate)
+    // Generate order date with recency bias and weekend boost (1.4x)
+    const createdAt = generateRecentDateWithWeekendBias(startDate, endDate)
+
+    // Skip if date is in the future (beyond today)
+    if (createdAt > today) {
+      continue
+    }
 
     // Determine order status
     const status = weightedChoice(ORDER_STATUS)
@@ -161,11 +175,16 @@ export async function generateOrders(
     })
 
     orders.push(order)
+    generatedCount++
 
     // Progress logging
-    if ((i + 1) % 500 === 0) {
-      payload.logger.info(`  Generated ${i + 1}/${count} orders`)
+    if (generatedCount % 500 === 0) {
+      payload.logger.info(`  Generated ${generatedCount}/${count} orders`)
     }
+  }
+
+  if (attempts >= maxAttempts) {
+    payload.logger.warn(`Reached maximum attempts (${maxAttempts}), generated ${generatedCount}/${count} orders`)
   }
 
   payload.logger.info(`✓ Generated ${orders.length} orders`)

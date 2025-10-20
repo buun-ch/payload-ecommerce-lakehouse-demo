@@ -76,17 +76,19 @@ const baseAddressUKData: Transaction['billingAddress'] = {
 export const seed = async ({
   payload,
   req,
+  preset,
 }: {
   payload: Payload
   req: PayloadRequest
+  preset?: 'small' | 'medium' | 'large'
 }): Promise<void> => {
   // Check if enhanced seed should be used
   // Set SEED_MODE=enhanced or SEED_PRESET=small|medium|large to use enhanced seed
-  const useEnhancedSeed = process.env.SEED_MODE === 'enhanced' || process.env.SEED_PRESET
+  const useEnhancedSeed = process.env.SEED_MODE === 'enhanced' || process.env.SEED_PRESET || preset
 
   if (useEnhancedSeed) {
     payload.logger.info('Using enhanced seed with realistic data distributions...')
-    return enhancedSeed({ payload, req })
+    return enhancedSeed({ payload, req, preset })
   }
 
   payload.logger.info('Seeding database with simple demo data...')

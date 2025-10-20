@@ -423,7 +423,7 @@ LIMIT 20;
 - Display columns: `product_a`, `product_b`, `times_bought_together`, `frequency_percentage`
 - Use for product recommendation insights
 
-## 6. KPI Dashboard Queries
+## 6. Key metrics Queries
 
 ### 6.1 Key Metrics Summary (Last 30 Days)
 

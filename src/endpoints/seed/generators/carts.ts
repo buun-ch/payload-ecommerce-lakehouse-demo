@@ -11,7 +11,7 @@
 import type { Payload } from 'payload'
 import { faker } from '@faker-js/faker'
 import type { Cart, Product } from '@/payload-types'
-import { isCartAbandoned, generateRecentDate } from '../distributions'
+import { isCartAbandoned, generateRecentDateWithWeekendBias } from '../distributions'
 import type { CustomerWithSegment } from './customers'
 
 export interface CartGenerationContext {
@@ -30,15 +30,24 @@ export async function generateCarts(
   payload.logger.info(`Generating ${count} carts (28% abandonment rate)...`)
 
   const carts: Cart[] = []
-  // Generate carts from past 300 days to today
+  // Generate carts from past 500 days to future 60 days, then filter to today
+  // This prevents concentration of carts on the current day
+  const today = new Date()
+  today.setHours(0, 0, 0, 0) // Start of today
   const endDate = new Date()
+  endDate.setDate(endDate.getDate() + 60) // 60 days in future
   const startDate = new Date()
-  startDate.setDate(startDate.getDate() - 300)
+  startDate.setDate(startDate.getDate() - 500)
 
   let abandonedCount = 0
   let guestCount = 0
+  let generatedCount = 0
+  let attempts = 0
+  const maxAttempts = count * 3 // Safety limit to prevent infinite loops
 
-  for (let i = 0; i < count; i++) {
+  while (generatedCount < count && attempts < maxAttempts) {
+    attempts++
+
     // 70% of carts have customer, 30% are guest
     const isGuest = Math.random() < 0.3
     const customer = isGuest ? null : faker.helpers.arrayElement(context.customers)
@@ -46,8 +55,13 @@ export async function generateCarts(
     // Check if cart is abandoned (28% rate)
     const abandoned = isCartAbandoned()
 
-    // Generate cart creation date
-    const createdAt = generateRecentDate(startDate, endDate)
+    // Generate cart creation date with weekend boost (1.4x)
+    const createdAt = generateRecentDateWithWeekendBias(startDate, endDate)
+
+    // Skip if date is in the future (beyond today)
+    if (createdAt > today) {
+      continue
+    }
 
     // Select 1-3 products for cart
     const numItems = faker.number.int({ min: 1, max: 3 })
@@ -109,20 +123,25 @@ export async function generateCarts(
     })
 
     carts.push(cart)
+    generatedCount++
 
     if (abandoned) abandonedCount++
     if (isGuest) guestCount++
 
     // Progress logging
-    if ((i + 1) % 200 === 0) {
-      payload.logger.info(`  Generated ${i + 1}/${count} carts`)
+    if (generatedCount % 200 === 0) {
+      payload.logger.info(`  Generated ${generatedCount}/${count} carts`)
     }
   }
 
-  const actualAbandonmentRate = ((abandonedCount / count) * 100).toFixed(1)
-  const guestRate = ((guestCount / count) * 100).toFixed(1)
+  if (attempts >= maxAttempts) {
+    payload.logger.warn(`Reached maximum attempts (${maxAttempts}), generated ${generatedCount}/${count} carts`)
+  }
 
-  payload.logger.info(`✓ Generated ${count} carts`)
+  const actualAbandonmentRate = carts.length > 0 ? ((abandonedCount / carts.length) * 100).toFixed(1) : '0.0'
+  const guestRate = carts.length > 0 ? ((guestCount / carts.length) * 100).toFixed(1) : '0.0'
+
+  payload.logger.info(`✓ Generated ${carts.length} carts`)
   payload.logger.info(
     `  Abandoned: ${abandonedCount} (${actualAbandonmentRate}%), Guest: ${guestCount} (${guestRate}%)`,
   )

@@ -126,13 +126,27 @@ Built with [Payload CMS ecommerce template](./README-payload.md):
 2. **Seed demo data:**
 
    ```bash
-   # Set Pexels API key for product images
+   # Set Pexels API key for product images (optional, for image generation)
    export PEXELS_API_KEY="..."
-   # Generate sample ecommerce data
-   just pyaload::seed
+
+   # Generate sample ecommerce data with default preset (medium)
+   just payload::op-seed
+
+   # Or specify a preset: small, medium, or large
+   just payload::op-seed small
+   just payload::op-seed medium
+   just payload::op-seed large
    ```
 
-   See [docs/spyaload::eed.md](./docs/seed.md) for seeding options and data volume.
+   **Data Volume by Preset:**
+
+   | Preset | Products | Users | Orders | Carts | Use Case |
+   | :-- | --: | --: | --: | --: | :-- |
+   | small | 50 | 100 | 500 | 150 | Quick testing, local development |
+   | medium | 200 | 500 | 3,000 | 800 | Analytics demos, workshops (default) |
+   | large | 1,000 | 2,000 | 20,000 | 5,000 | Performance testing, realistic scale |
+
+   See [docs/seed.md](./docs/seed.md) for detailed seeding options and data distributions.
 
 3. **Ingest data to lakehouse:**
 

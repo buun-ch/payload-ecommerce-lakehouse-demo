@@ -5,7 +5,7 @@
  * - Log-normal price distribution (most products budget, few luxury)
  * - Pareto popularity assignment (for biased order selection)
  * - 40% of products have variants (size/color)
- * - 15% out of stock (realistic inventory)
+ * - Realistic inventory distribution (10% out of stock, 10% low stock, 20% limited, 40% normal, 20% high)
  * - Realistic product names and descriptions
  * - Optional Pexels image generation (for small/medium presets)
  */
@@ -17,8 +17,8 @@ import type { Category, Product, VariantType, VariantOption, Media, Variant } fr
 import {
   weightedChoice,
   generatePrice,
+  generateInventory,
   PRODUCT_POPULARITY,
-  INVENTORY_STATUS,
   VARIANTS_ENABLED_RATE,
   CATEGORY_PRODUCT_TYPES,
   TECH_BRANDS,
@@ -258,10 +258,8 @@ export async function generateProducts(
     // Determine if product has variants
     const enableVariants = Math.random() < VARIANTS_ENABLED_RATE
 
-    // Determine inventory status
-    const inventoryStatus = weightedChoice(INVENTORY_STATUS)
-    const inventory =
-      inventoryStatus === 'out_of_stock' ? 0 : faker.number.int({ min: 50, max: 500 })
+    // Generate inventory with realistic distribution
+    const inventory = generateInventory()
 
     // Select single category for this product
     const category = faker.helpers.arrayElement(categories)

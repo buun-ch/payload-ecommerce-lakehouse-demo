@@ -6,12 +6,13 @@
  * - Realistic names, emails, and contact info
  * - Segment stored in custom field for analytics
  * - Different order patterns per segment
+ * - Customer creation dates distributed over past 500 days with recency bias
  */
 
 import type { Payload } from 'payload'
 import { faker } from '@faker-js/faker'
 import type { User } from '@/payload-types'
-import { weightedChoice, CUSTOMER_SEGMENTS, type CustomerSegment } from '../distributions'
+import { weightedChoice, CUSTOMER_SEGMENTS, generateRecentDate, type CustomerSegment } from '../distributions'
 
 export interface CustomerWithSegment extends User {
   _segment: CustomerSegment
@@ -38,6 +39,11 @@ export async function generateCustomers(
     New: [],
   }
 
+  // Generate customers from past 500 days to today for realistic acquisition tracking
+  const endDate = new Date()
+  const startDate = new Date()
+  startDate.setDate(startDate.getDate() - 500)
+
   for (let i = 0; i < count; i++) {
     // Assign customer segment
     const segment = weightedChoice(CUSTOMER_SEGMENTS)
@@ -46,11 +52,15 @@ export async function generateCustomers(
     const firstName = faker.person.firstName()
     const lastName = faker.person.lastName()
 
+    // Generate customer creation date with recency bias
+    const createdAt = generateRecentDate(startDate, endDate)
+
     const customerData = {
       name: `${firstName} ${lastName}`,
       email: faker.internet.email({ firstName, lastName }).toLowerCase(),
       password: 'password', // Will be hashed by PayloadCMS
       roles: ['customer' as const],
+      createdAt: createdAt.toISOString(),
     }
 
     const customer = (await payload.create({

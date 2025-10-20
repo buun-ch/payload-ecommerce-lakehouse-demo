@@ -78,7 +78,7 @@ models/
 Staging models clean and standardize raw data from Iceberg, handling JSON extraction with Trino functions.
 
 | Model | Description | Key Transformations |
-|-------|-------------|-------------------|
+| :--- | :--- | :--- |
 | `stg_products` | Product catalog | Clean product data, price formatting |
 | `stg_categories` | Product categories | Category master data |
 | `stg_variants` | Product variants | Extract variant details from JSON |
@@ -95,7 +95,7 @@ Marts models create a star schema optimized for analytics and BI tools.
 #### Fact Tables
 
 | Table | Type | Description | Grain |
-|-------|------|-------------|-------|
+| :--- | :--- | :--- | :--- |
 | `fact_orders` | Incremental | Order-level transactions | One row per order |
 | `fact_order_items` | Incremental | Line item details | One row per product in order |
 | `fact_transactions` | Incremental | Payment transactions | One row per payment transaction |
@@ -105,11 +105,11 @@ Marts models create a star schema optimized for analytics and BI tools.
 #### Dimension Tables
 
 | Table | Type | Description | Key Attributes |
-|-------|------|-------------|----------------|
-| `dim_products` | Table | Product catalog | Product name, slug, price, inventory, stock flags |
+| :--- | :--- | :--- | :--- |
+| `dim_products` | Table | Product catalog | Product name, slug, price, inventory |
 | `dim_categories` | Table | Product categories | Category hierarchy |
-| `dim_customers` | Table | Customer profiles with metrics | Name, email, segment (VIP/Regular/Active/New), LTV, order count |
-| `dim_date` | Table | Date dimension (2020-2030) | Year, month, day, weekday, is_weekend, is_holiday_season |
+| `dim_customers` | Table | Customer profiles with metrics | Name, email, segment, LTV, order count |
+| `dim_date` | Table | Date dimension (2020-2030) | Year, month, day, weekday |
 
 ### Schema Locations
 
