@@ -122,7 +122,7 @@ export const enhancedSeed = async ({
       collection: 'users',
       where: {
         roles: {
-          equals: 'admin',
+          contains: 'admin',
         },
       },
       limit: 1000,
@@ -130,6 +130,9 @@ export const enhancedSeed = async ({
 
     const adminUserIds = adminUsers.docs.map((user) => user.id)
     payload.logger.info(`Found ${adminUserIds.length} admin user(s) to preserve`)
+    if (adminUserIds.length > 0) {
+      payload.logger.info(`Preserving admin users: ${adminUsers.docs.map(u => u.email).join(', ')}`)
+    }
 
     // Delete non-admin users
     if (adminUserIds.length > 0) {
