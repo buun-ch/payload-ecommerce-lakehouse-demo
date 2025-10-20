@@ -310,20 +310,33 @@ cohort_orders AS (
     FROM first_purchase fp
     JOIN ecommerce_marts.fact_orders o
         ON fp.customer_id = o.customer_id
+),
+cohort_data AS (
+    SELECT
+        cohort_month,
+        months_since_first,
+        COUNT(DISTINCT customer_id) AS active_customers
+    FROM cohort_orders
+    WHERE cohort_month >= DATE_FORMAT(CURRENT_DATE - INTERVAL '12' MONTH, '%Y-%m')
+    GROUP BY cohort_month, months_since_first
 )
 SELECT
     cohort_month,
     months_since_first,
-    COUNT(DISTINCT customer_id) AS active_customers,
-    COUNT(DISTINCT CASE WHEN months_since_first = 0 THEN customer_id END) AS cohort_size,
+    active_customers,
+    FIRST_VALUE(active_customers) OVER (
+        PARTITION BY cohort_month
+        ORDER BY months_since_first
+    ) AS cohort_size,
     ROUND(
-        COUNT(DISTINCT customer_id) * 100.0 /
-        COUNT(DISTINCT CASE WHEN months_since_first = 0 THEN customer_id END),
+        active_customers * 100.0 /
+        NULLIF(FIRST_VALUE(active_customers) OVER (
+            PARTITION BY cohort_month
+            ORDER BY months_since_first
+        ), 0),
         2
     ) AS retention_rate
-FROM cohort_orders
-WHERE cohort_month >= DATE_FORMAT(CURRENT_DATE - INTERVAL '12' MONTH, '%Y-%m')
-GROUP BY cohort_month, months_since_first
+FROM cohort_data
 ORDER BY cohort_month DESC, months_since_first ASC;
 ```
 
