@@ -1,6 +1,6 @@
 # Ecommerce Analytics - Sample Queries
 
-This document contains typical analytical queries for the ecommerce star schema. These queries can be executed in Metabase or any SQL client connected to Trino.
+This document contains typical analytical queries for the ecommerce star schema. These queries can be executed in Apache Superset or any SQL client connected to Trino.
 
 ## Schema Overview
 
@@ -38,11 +38,20 @@ GROUP BY d.date_day, d.day_name
 ORDER BY d.date_day DESC;
 ```
 
-**Visualization**:
+**Superset Visualization**:
 
-- Type: Line chart
-- X-axis: `date_day`
-- Y-axis: `total_revenue_usd` (can also add `total_orders` as secondary series)
+- **Chart Type**: Mixed Chart (Recommended for dual metrics)
+- **Configuration**:
+    - X Axis: `date_day` (sorted ascending)
+    - Metrics:
+        - `total_revenue_usd`: Chart Type **Area**, Y Axis **Left**
+        - `total_orders`: Chart Type **Line**, Y Axis **Right**
+- **Customization**:
+    - Left Y Axis Format: `$,.0f` (currency for revenue)
+    - Right Y Axis Format: `,.0f` (number for orders)
+    - Enable area fill for revenue to emphasize volume
+    - Add markers to orders line for clarity
+- **Why Mixed Chart**: Revenue and orders have different scales - dual axis prevents small values from being crushed at bottom
 
 ### 1.2 Monthly Revenue Summary
 
@@ -61,11 +70,23 @@ GROUP BY DATE_FORMAT(d.date_day, '%Y-%m')
 ORDER BY year_month DESC;
 ```
 
-**Visualization**:
+**Superset Visualization**:
 
-- Type: Bar chart (or table)
-- X-axis: `year` and `month` (combine as "YYYY-MM" or use both fields)
-- Y-axis: `total_revenue_usd`
+- **Chart Type**: Mixed Chart (Recommended for dual metrics)
+- **Mixed Chart Configuration**:
+    - X Axis: `year_month`
+    - Metrics:
+        - `total_revenue_usd`: Chart Type **Bar**, Y Axis **Left**
+        - `total_orders`: Chart Type **Line**, Y Axis **Right**
+    - Sort: By `year_month` descending to show recent months first
+- **Customization**:
+    - Left Y Axis Format: `$,.0f` (currency)
+    - Right Y Axis Format: `,.0f` (number)
+    - Line markers: Enable for orders to show monthly points
+- **Alternative - Table Configuration**:
+    - Columns: All metrics for detailed analysis
+    - Enable sorting and filtering for interactive exploration
+- **Tip**: Use Big Number with Trendline for current month's revenue with trend
 
 ### 1.3 Weekend vs Weekday Sales
 
@@ -82,11 +103,18 @@ WHERE d.date_day >= CURRENT_DATE - INTERVAL '90' DAY
 GROUP BY CASE WHEN d.is_weekend THEN 'Weekend' ELSE 'Weekday' END;
 ```
 
-**Visualization**:
+**Superset Visualization**:
 
-- Type: Pie chart or bar chart
-- Pie chart: Dimension: `period_type`, Metric: `total_revenue_usd`
-- Bar chart: X-axis: `period_type`, Y-axis: `total_revenue_usd`
+- **Chart Type**: Pie Chart, Donut Chart, or Bar Chart
+- **Pie/Donut Configuration**:
+    - Dimension: `period_type`
+    - Metric: `total_revenue_usd`
+    - Show percentage labels and values
+- **Bar Chart Configuration**:
+    - X Axis: `period_type`
+    - Metrics: `total_revenue_usd`, `total_orders` (grouped bars)
+    - Horizontal orientation for better label readability
+- **Alternative**: Sunburst Chart for hierarchical breakdown if adding more dimensions
 
 ## 2. Product Analysis
 
@@ -119,11 +147,17 @@ ORDER BY total_revenue_usd DESC
 LIMIT 10;
 ```
 
-**Visualization**:
+**Superset Visualization**:
 
-- Type: Horizontal bar chart
-- X-axis: `total_revenue_usd`
-- Y-axis: `product_name`
+- **Chart Type**: Bar Chart (Horizontal)
+- **Configuration**:
+    - X Axis: `total_revenue_usd`
+    - Y Axis: `product_name` (sorted by revenue descending)
+- **Customization**:
+    - Show value labels on bars
+    - Truncate long product names with tooltips
+    - Add `categories` as tooltip
+- **Alternative**: Use Table with sparklines showing quantity trend over time
 
 ### 2.2 Category Performance
 
@@ -143,11 +177,20 @@ GROUP BY c.category_name
 ORDER BY total_revenue_usd DESC;
 ```
 
-**Visualization**:
+**Superset Visualization**:
 
-- Type: Treemap or donut chart
-- Treemap: Dimension: `category_name`, Metric: `total_revenue_usd`
-- Donut chart: Dimension: `category_name`, Metric: `total_revenue_usd`
+- **Chart Type**: Treemap, Sunburst Chart, or Pie Chart
+- **Treemap Configuration** (Recommended):
+    - Dimension: `category_name`
+    - Metric: `total_revenue_usd`
+    - Show both percentage and absolute values
+- **Sunburst Configuration**:
+    - Great for hierarchical category structures
+    - Interactive drill-down capability
+- **Pie/Donut Configuration**:
+    - Dimension: `category_name`
+    - Metric: `total_revenue_usd`
+    - Limit to top 10 categories for clarity
 
 ### 2.3 Inventory Alert - Low Stock Products
 
@@ -175,10 +218,31 @@ WHERE p.is_low_stock = TRUE OR p.is_in_stock = FALSE
 ORDER BY p.inventory ASC;
 ```
 
-**Visualization**:
+**Superset Visualization**:
 
-- Type: Table
-- Display all columns for detailed alert view
+- **Chart Type**: Table
+- **Configuration**:
+    - Display all columns for operational monitoring
+    - Sort by `inventory` ascending (lowest stock first)
+    - Format `price_usd` as currency: `$,.2f`
+    - Format `inventory` as number: `,.0f`
+- **Custom Conditional Formatting** (for visual alerts):
+    - Column: `inventory`
+        - Color scheme: `alert` (yellow/warning)
+        - Operator: `<=`
+        - Target value: `5`
+    - Column: `inventory`
+        - Color scheme: `error` (red)
+        - Operator: `=`
+        - Target value: `0`
+- **Alternative Enhancement**:
+    - Add calculated column for potential revenue:
+
+    ```sql
+    price_usd * inventory AS potential_value_usd
+    ```
+
+- **Dashboard Filters**: Add category filter at dashboard level for quick filtering
 
 ## 3. Customer Analysis
 
@@ -197,10 +261,22 @@ GROUP BY customer_segment
 ORDER BY total_ltv_usd DESC;
 ```
 
-**Visualization**:
+**Superset Visualization**:
 
-- Type: Bar chart (stacked or grouped) or table
-- Bar chart: X-axis: `customer_segment`, Y-axis: `total_ltv_usd` or `customer_count`
+- **Chart Type**: Mixed Chart (Recommended for dual metrics)
+- **Configuration**:
+    - X Axis: `customer_segment`
+    - Metrics:
+        - `total_ltv_usd`: Chart Type **Bar**, Y Axis **Left**
+        - `customer_count`: Chart Type **Line**, Y Axis **Right**
+    - Sort by `total_ltv_usd` descending
+- **Customization**:
+    - Left Y Axis Format: `$,.0f` (currency)
+    - Right Y Axis Format: `,.0f` (number)
+    - Show `avg_ltv_usd` as data labels on bars
+    - Line markers: Enable for customer_count
+- **Why Mixed Chart**: LTV values ($thousands) and customer counts have different scales
+- **Dashboard Tip**: Combine with Pie Chart showing customer_count distribution by segment
 
 ### 3.2 Top 20 Customers by Lifetime Value
 
@@ -219,10 +295,15 @@ ORDER BY lifetime_value_usd DESC
 LIMIT 20;
 ```
 
-**Visualization**:
+**Superset Visualization**:
 
-- Type: Table
-- Display all columns for customer details
+- **Chart Type**: Table
+- **Configuration**:
+    - Display all columns for detailed customer profiles
+    - Sort by `lifetime_value_usd` descending
+    - Format `lifetime_value_usd` as currency: `$,.2f`
+    - Format dates as `YYYY-MM-DD`
+- **Alternative**: Use Bar Chart (horizontal) to show top 20 customers visually with ranking by bar length
 
 ### 3.3 Customer Acquisition by Month
 
@@ -238,11 +319,22 @@ GROUP BY DATE_FORMAT(customer_since, '%Y-%m')
 ORDER BY acquisition_month DESC;
 ```
 
-**Visualization**:
+**Superset Visualization**:
 
-- Type: Area chart or line chart
-- X-axis: `acquisition_month`
-- Y-axis: `new_customers` (can add `cohort_ltv_usd` as secondary series)
+- **Chart Type**: Mixed Chart (Recommended for dual metrics)
+- **Configuration**:
+    - X Axis: `acquisition_month`
+    - Metrics:
+        - `new_customers`: Chart Type **Area** or **Bar**, Y Axis **Left**
+        - `avg_customer_ltv_usd`: Chart Type **Line**, Y Axis **Right**
+- **Customization**:
+    - Left Y Axis Format: `,.0f` (number of customers)
+    - Right Y Axis Format: `$,.0f` (currency for LTV)
+    - Area fill: Enable for new_customers to show volume
+    - Line markers: Enable for avg_ltv to show monthly values
+    - Mark milestones or marketing campaigns as annotations
+- **Why Mixed Chart**: Customer count and average LTV have different scales and units
+- **Alternative**: Use Area Chart alone for `new_customers` if focusing on acquisition trend only
 
 ## 4. Transaction & Payment Analysis
 
@@ -259,11 +351,18 @@ GROUP BY status
 ORDER BY transaction_count DESC;
 ```
 
-**Visualization**:
+**Superset Visualization**:
 
-- Type: Pie chart
-- Dimension: `status`
-- Metric: `transaction_count` or `total_amount_usd`
+- **Chart Type**: Pie Chart or Donut Chart
+- **Configuration**:
+    - Dimension: `status`
+    - Metric: `transaction_count` (or `total_amount_usd` for revenue view)
+    - Show percentage as calculated field
+- **Customization**:
+    - Display both count and percentage
+    - Show total in center (for Donut Chart)
+- **Dashboard Tip**: Add Big Number card showing success rate % as KPI
+- **Alert**: Set threshold alert if success rate drops below 95%
 
 ### 4.2 Daily Transaction Volume
 
@@ -282,11 +381,12 @@ GROUP BY d.date_day
 ORDER BY d.date_day DESC;
 ```
 
-**Visualization**:
+**Superset Visualization**:
 
-- Type: Line chart (multiple series)
-- X-axis: `date_day`
-- Y-axis: `transaction_count`, `successful_transactions`, `failed_transactions` (as separate series)
+- **Chart Type**: Line Chart
+- **Configuration**:
+    - X Axis: `date_day`
+    - Metrics: `successful_transactions`, `failed_transactions`, `transaction_count`
 
 ## 5. Advanced Analytics
 
@@ -340,12 +440,17 @@ FROM cohort_data
 ORDER BY cohort_month DESC, months_since_first ASC;
 ```
 
-**Visualization**:
+**Superset Visualization**:
 
-- Type: Pivot table or heatmap
-- X-axis (columns): `months_since_first`
-- Y-axis (rows): `cohort_month`
-- Values: `retention_rate` (color-coded by percentage)
+- **Chart Type**: Heatmap (Recommended)
+- **Configuration**:
+    - X Axis: `months_since_first` (0, 1, 2, 3...)
+    - Y Axis: `cohort_month` (cohort grouping)
+    - Metric: `retention_rate`
+- **Customization**:
+    - Show percentage values in cells
+    - Sort cohorts by date descending (recent at top)
+- **Alternative**: Pivot Table with conditional cell formatting for detailed numbers
 
 ### 5.2 RFM Analysis (Recency, Frequency, Monetary)
 
@@ -380,11 +485,22 @@ FROM customer_rfm
 ORDER BY monetary DESC;
 ```
 
-**Visualization**:
+**Superset Visualization**:
 
-- Type: Scatter plot or table
-- Scatter plot: X-axis: `recency_days`, Y-axis: `monetary_usd`, Size: `frequency`, Color: `rfm_segment`
-- Table: Group by `rfm_segment`
+- **Chart Type**: Bubble Chart or Table
+- **Bubble Chart Configuration**:
+    - Dimension: `rfm_segment` (for segment grouping)
+    - Entity: `customer_name`
+    - X Axis: `recency_days`
+    - Y Axis: `monetary_usd`
+    - Bubble Size: `frequency`
+- **Customization**:
+    - Interactive tooltips showing customer details
+    - Filter by segment for focused analysis
+- **Table Configuration**:
+    - Group by `rfm_segment`
+    - Show aggregate metrics: COUNT, AVG(monetary), AVG(recency)
+- **Dashboard Tip**: Combine with Pie Chart showing segment distribution
 
 ### 5.3 Product Affinity Analysis
 
@@ -417,11 +533,19 @@ ORDER BY times_bought_together DESC
 LIMIT 20;
 ```
 
-**Visualization**:
+**Superset Visualization**:
 
-- Type: Table (network diagrams not directly supported)
-- Display columns: `product_a`, `product_b`, `times_bought_together`, `frequency_percentage`
-- Use for product recommendation insights
+- **Chart Type**: Table
+- **Configuration**:
+    - Columns: `product_a`, `product_b`, `times_bought_together`, `frequency_percentage`
+    - Sort by `times_bought_together` descending
+    - Format `frequency_percentage` as percent: `,.2f%`
+    - Format `times_bought_together` as number: `,.0f`
+- **Dashboard Features**:
+    - Enable table search for quick product lookup
+    - Add filter for minimum frequency threshold
+    - Export to CSV for recommendation engine integration
+- **Use Case**: Product bundling, cross-sell recommendations, inventory planning
 
 ## 6. Key metrics Queries
 
@@ -476,47 +600,74 @@ SELECT
 FROM current_period cp, previous_period pp;
 ```
 
-**Visualization**:
+**Superset Visualization**:
 
-- Type: Number (scalar) cards
-- Create separate cards for each metric row
-- Display `current_value` with `growth_percentage` as trend indicator
-- Use color coding (green for positive growth, red for negative)
+- **Chart Type**: Table
+- **Configuration**:
+    - Display all columns: `metric`, `current_value`, `previous_value`, `growth_percentage`
+    - Sort by `metric` to maintain consistent order
+- **Customization**:
+    - Format `current_value` and `previous_value`:
+        - Currency format `$,.2f` for revenue metrics
+        - Number format `,.0f` for count metrics
+    - Format `growth_percentage` as percent: `,.2f%`
+- **Dashboard Layout**: Place at top of dashboard as key metrics summary
 
-## Metabase Dashboard Recommendations
+## Superset Dashboard Recommendations
 
 ### Executive Dashboard
 
-- Monthly revenue trend (Query 1.2)
-- Key metrics summary (Query 6.1)
-- Customer segmentation (Query 3.1)
-- Category performance (Query 2.2)
+- **Key Metrics Summary**: Key metrics (Query 6.1) - Table showing current vs previous period
+- **Revenue Trends**: Monthly revenue summary (Query 1.2) - Mixed Chart (bars + line)
+- **Customer Overview**: Customer segmentation (Query 3.1) - Grouped Bar Chart
+- **Category Mix**: Category performance (Query 2.2) - Treemap
 
 ### Product Performance Dashboard
 
-- Top 10 products (Query 2.1)
-- Category analysis (Query 2.2)
-- Low stock alerts (Query 2.3)
-- Product affinity (Query 5.3)
+- **Top Products**: Top 10 products (Query 2.1) - Horizontal Bar Chart
+- **Category Breakdown**: Category performance (Query 2.2) - Sunburst Chart
+- **Stock Alerts**: Low stock products (Query 2.3) - Table with conditional formatting
+- **Cross-Sell Opportunities**: Product affinity (Query 5.3) - Table
 
 ### Customer Analytics Dashboard
 
-- Customer segmentation (Query 3.1)
-- Top customers by LTV (Query 3.2)
-- RFM analysis (Query 5.2)
-- Cohort retention (Query 5.1)
+- **Segment Distribution**: Customer segmentation (Query 3.1) - Pie Chart + Bar Chart combo
+- **VIP Customers**: Top 20 by LTV (Query 3.2) - Table with highlights
+- **Customer Behavior**: RFM analysis (Query 5.2) - Bubble Chart
+- **Retention**: Cohort analysis (Query 5.1) - Heatmap
 
 ### Operations Dashboard
 
-- Daily sales trend (Query 1.1)
-- Payment success rate (Query 4.1)
-- Transaction volume (Query 4.2)
-- Weekend vs weekday (Query 1.3)
+- **Daily Trends**: Daily sales trend (Query 1.1) - Line Chart with area fill
+- **Payment Health**: Payment success rate (Query 4.1) - Donut Chart + Big Number KPI
+- **Transaction Monitoring**: Transaction volume (Query 4.2) - Mixed Chart (stacked)
+- **Pattern Analysis**: Weekend vs weekday (Query 1.3) - Bar Chart comparison
 
-## Tips for Metabase Visualization
+## Tips for Superset Visualization
 
-1. **Use filters**: Add date range filters to all time-based queries
-2. **Color coding**: Use consistent colors for metrics (revenue=green, orders=blue)
-3. **Goal lines**: Add target lines for key metrics
-4. **Drill-downs**: Enable click-through from summary to detail views
-5. **Auto-refresh**: Set dashboards to auto-refresh every 15-30 minutes
+### Dashboard Design
+
+1. **Layout Hierarchy**: Place KPIs at top, detailed charts below
+2. **Responsive Grid**: Use Superset's grid system for flexible layouts
+3. **Tab Organization**: Group related charts in tabs for complex dashboards
+
+### Chart Optimization
+
+1. **Use Mixed Charts**: Combine chart types (line + bar) for richer insights with dual Y-axes
+2. **Number Formatting**: Apply currency, percentage, and thousand separators to metrics
+3. **Interactive Filters**: Add date range, category, and segment filters at dashboard level
+4. **Drill-Through**: Configure chart click-through to detailed views (limited support)
+
+### Performance
+
+1. **Query Caching**: Enable result caching for frequently accessed charts
+2. **Incremental Refresh**: Schedule regular cache warmup for dashboard load speed
+3. **Limit Row Count**: Set reasonable limits (100-1000 rows) for table visualizations
+4. **Async Queries**: Enable async query execution for long-running analyses
+
+### Advanced Features
+
+1. **Custom SQL**: Use SQL Lab for complex queries, then save as datasets
+2. **Calculated Metrics**: Create virtual metrics (e.g., conversion rate, growth rate)
+3. **Alerts**: Set up SQL-based alerts for anomalies (e.g., sudden drop in revenue)
+4. **Annotations**: Add event markers to time series (e.g., marketing campaigns, holidays)

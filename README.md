@@ -11,7 +11,7 @@ This project showcases how to build a modern data stack by combining:
 - **Data Transformation**: Analytics-ready models with dbt (data build tool)
 - **Lakehouse Storage**: Apache Iceberg tables via Lakekeeper REST Catalog
 - **Query Engine**: Trino for distributed SQL queries
-- **BI & Visualization**: Metabase for dashboards and reporting
+- **BI & Visualization**: Apache Superset for dashboards and reporting
 
 ## Architecture
 
@@ -43,7 +43,7 @@ This project showcases how to build a modern data stack by combining:
            │
            ▼
     ┌──────────────┐
-    │   Metabase   │ Analytics & BI
+    │   Superset   │ Analytics & BI
     └──────────────┘
 ```
 
@@ -77,12 +77,17 @@ Built with [Payload CMS ecommerce template](./README-payload.md):
 - Data quality tests
 - See: [data/transformation/README.md](./data/transformation/README.md)
 
-**Analytics**:
+**Analytics & BI**:
 
 - Pre-built SQL queries for common analyses
 - Customer segmentation (RFM analysis)
 - Product performance tracking
 - Cohort retention analysis
+- Apache Superset dashboards with advanced visualizations
+  - Heatmaps for cohort retention analysis
+  - Bubble charts for RFM segmentation
+  - Mixed charts (bar + line) for multi-metric insights
+  - Conditional formatting for operational alerts
 - See: [docs/analysis_queries.md](./docs/analysis_queries.md)
 
 ## Getting Started
@@ -184,9 +189,41 @@ Built with [Payload CMS ecommerce template](./README-payload.md):
    just dbt::op-run --target=prod
    ```
 
-5. **Query with Trino/Metabase:**
+5. **Query with Trino:**
 
-   Sample queries available in [docs/analysis_queries.md](./docs/analysis_queries.md)
+   ```bash
+   # Install Trino CLI (macOS)
+   brew install trino
+
+   # Connect to Trino (interactive shell)
+   just trino
+
+   # Or specify username
+   just trino buun
+   ```
+
+   Quick verification queries:
+
+   ```sql
+   -- Verify all layers exist
+   SHOW SCHEMAS IN iceberg;
+
+   -- Count records in each layer
+   SELECT COUNT(*) FROM iceberg.ecommerce.orders;           -- Raw
+   SELECT COUNT(*) FROM iceberg.ecommerce_staging.stg_orders;  -- Staging
+   SELECT COUNT(*) FROM iceberg.ecommerce_marts.fact_orders;   -- Marts
+
+   -- Monthly revenue summary
+   SELECT
+     DATE_TRUNC('month', order_date) AS month,
+     COUNT(DISTINCT order_id) AS total_orders,
+     ROUND(SUM(amount_usd), 2) AS total_revenue_usd
+   FROM iceberg.ecommerce_marts.fact_orders
+   GROUP BY DATE_TRUNC('month', order_date)
+   ORDER BY month DESC;
+   ```
+
+   More sample queries in [docs/analysis_queries.md](./docs/analysis_queries.md)
 
 ## Project Structure
 
@@ -216,7 +253,7 @@ This project is designed to work optimally with [buun-stack](https://github.com/
 - **Lakekeeper** (Iceberg REST Catalog)
 - **Trino** distributed query engine
 - **MinIO** S3-compatible object storage
-- **Metabase** for BI and visualization
+- **Apache Superset** for BI and visualization
 - **Managed infrastructure** for the entire data stack
 
 ## Development Workflow
@@ -227,19 +264,42 @@ This project is designed to work optimally with [buun-stack](https://github.com/
 2. **Seed data** to test with realistic volumes
 3. **Ingest data** to the lakehouse (runs incrementally)
 4. **Transform data** with dbt (dev environment)
-5. **Query & visualize** in Metabase
+5. **Query & visualize** in Superset
 6. **Deploy to production** (prod target)
 
 ### Data Refresh
 
 ```bash
 # Full refresh (rebuild all data)
-just dlt::op-run --full-refresh
-just dbt::op-run --target=prod --full-refresh
+just dlt::clear                     # Clear dlt pipeline state
+just dlt::op-run                    # Re-ingest all data
+just dbt::op-run --target=prod --full-refresh  # Rebuild all models
 
 # Incremental refresh (new/updated records only)
 just dlt::op-run                    # Detects changes via updated_since
 just dbt::op-run --target=prod      # Incremental models only
+```
+
+### Table Management
+
+Drop Iceberg tables when needed (e.g., schema changes, corrupted data):
+
+```bash
+# Drop all tables (raw + staging + marts)
+just drop-tables
+
+# Drop specific layers
+just drop-raw-tables        # Raw tables only (dlt output)
+just drop-staging-tables    # Staging views only (dbt staging)
+just drop-mart-tables       # Marts tables only (dbt marts)
+```
+
+After dropping tables, re-run the pipeline:
+
+```bash
+just dlt::clear             # Clear pipeline state
+just dlt::op-run            # Re-ingest data
+just dbt::op-run --target=prod --full-refresh  # Rebuild models
 ```
 
 ## Technologies
@@ -257,7 +317,7 @@ just dbt::op-run --target=prod      # Incremental models only
 - **Catalog**: Lakekeeper (Iceberg REST Catalog)
 - **Query**: Trino (distributed SQL engine)
 - **Transformation**: dbt (data build tool)
-- **BI**: Metabase
+- **BI**: Apache Superset
 
 ### Infrastructure
 
@@ -299,6 +359,110 @@ Data flows through three layers:
 2. **Staging**: Cleaned & standardized → dbt staging views
 3. **Marts**: Analytics-ready star schema → dbt marts tables
 
+### Data Schema
+
+The data pipeline creates tables and views across three Iceberg namespaces:
+
+#### Raw Layer (`iceberg.ecommerce`)
+
+Created by **dlt** from Payload CMS API:
+
+| Table | Description | Source Collection |
+|-------|-------------|-------------------|
+| `orders` | Order records | `/api/orders` |
+| `transactions` | Payment transactions | `/api/transactions` |
+| `carts` | Shopping carts | `/api/carts` |
+| `products` | Product catalog | `/api/products` |
+| `variants` | Product variants | `/api/variants` |
+| `categories` | Product categories | `/api/categories` |
+| `users` | Customer accounts | `/api/users` |
+| `varianttypes` | Variant type definitions | `/api/variantTypes` |
+| `variantoptions` | Variant option values | `/api/variantOptions` |
+
+#### Staging Layer (`iceberg.ecommerce_staging`)
+
+Created by **dbt** as views for lightweight transformation:
+
+| View | Description | Materialization |
+|------|-------------|-----------------|
+| `stg_orders` | Normalized orders | VIEW |
+| `stg_order_items` | Exploded order items | VIEW |
+| `stg_transactions` | Normalized transactions | VIEW |
+| `stg_carts` | Normalized carts | VIEW |
+| `stg_products` | Normalized products | VIEW |
+| `stg_product_categories` | Product-category relationships | VIEW |
+| `stg_variants` | Normalized variants | VIEW |
+| `stg_categories` | Normalized categories | VIEW |
+| `stg_customers` | Customer master data | VIEW |
+
+#### Marts Layer (`iceberg.ecommerce_marts`)
+
+Created by **dbt** as tables for analytics:
+
+| Table | Type | Description |
+|-------|------|-------------|
+| `fact_orders` | Fact | Order transactions with metrics |
+| `fact_order_items` | Fact | Individual line items |
+| `fact_transactions` | Fact | Payment transactions |
+| `dim_customers` | Dimension | Customer master with segments |
+| `dim_products` | Dimension | Product catalog |
+| `dim_categories` | Dimension | Category hierarchy |
+| `dim_date` | Dimension | Date dimension for time-based analysis |
+| `bridge_product_categories` | Bridge | Many-to-many product-category relationships |
+
+#### Exploring with Trino CLI
+
+Connect to Trino with OIDC authentication:
+
+```bash
+# Interactive shell
+just trino
+
+# Or specify username directly
+just trino buun
+```
+
+Useful queries for exploring the schema:
+
+```sql
+-- List all schemas in the Iceberg catalog
+SHOW SCHEMAS IN iceberg;
+
+-- List tables in raw layer
+SHOW TABLES IN iceberg.ecommerce;
+
+-- List views in staging layer
+SHOW TABLES IN iceberg.ecommerce_staging;
+
+-- List tables in marts layer
+SHOW TABLES IN iceberg.ecommerce_marts;
+
+-- Describe table structure
+DESCRIBE iceberg.ecommerce.orders;
+DESCRIBE iceberg.ecommerce_marts.fact_orders;
+
+-- Preview data
+SELECT * FROM iceberg.ecommerce.orders LIMIT 5;
+SELECT * FROM iceberg.ecommerce_staging.stg_orders LIMIT 5;
+SELECT * FROM iceberg.ecommerce_marts.fact_orders LIMIT 5;
+
+-- Count records in each layer
+SELECT COUNT(*) FROM iceberg.ecommerce.orders;
+SELECT COUNT(*) FROM iceberg.ecommerce_marts.fact_orders;
+
+-- Check data freshness
+SELECT
+  MAX(createdat) as latest_order_raw,
+  MAX(updatedat) as latest_update_raw
+FROM iceberg.ecommerce.orders;
+
+SELECT
+  MAX(order_date) as latest_order_marts
+FROM iceberg.ecommerce_marts.fact_orders;
+```
+
+See [docs/analysis_queries.md](./docs/analysis_queries.md) for more analytical queries.
+
 ### Incremental Processing
 
 - **dlt**: Extracts only new/updated records via `updated_since` parameter
@@ -325,6 +489,7 @@ See [LICENSE](./LICENSE) for details.
 - [dbt Documentation](https://docs.getdbt.com/)
 - [Apache Iceberg](https://iceberg.apache.org/)
 - [Trino Documentation](https://trino.io/docs/current/)
+- [Apache Superset](https://superset.apache.org/)
 - [buun-stack](https://github.com/buun-ch/buun-stack)
 - [mise](https://mise.jdx.dev/) - Development tool version manager
 - [just](https://github.com/casey/just) - Command runner
