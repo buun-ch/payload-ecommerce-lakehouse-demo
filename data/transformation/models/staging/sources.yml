@@ -26,17 +26,23 @@ sources:
         description: Raw products from Payload CMS
         columns:
           - name: id
+            description: Product ID
             tests:
-              - unique
-              - not_null
+              - unique:
+                  description: "Validates that product IDs from Payload CMS are unique"
+              - not_null:
+                  description: "Ensures all product records have an ID"
 
       - name: variants
         description: Product variants
         columns:
           - name: id
+            description: Variant ID
             tests:
-              - unique
-              - not_null
+              - unique:
+                  description: "Validates that variant IDs from Payload CMS are unique"
+              - not_null:
+                  description: "Ensures all variant records have an ID"
           - name: product
             description: JSON object containing product data
 
@@ -44,17 +50,23 @@ sources:
         description: Product categories
         columns:
           - name: id
+            description: Category ID
             tests:
-              - unique
-              - not_null
+              - unique:
+                  description: "Validates that category IDs from Payload CMS are unique"
+              - not_null:
+                  description: "Ensures all category records have an ID"
 
       - name: users
         description: User accounts (customers and admins)
         columns:
           - name: id
+            description: User ID
             tests:
-              - unique
-              - not_null
+              - unique:
+                  description: "Validates that user IDs from Payload CMS are unique"
+              - not_null:
+                  description: "Ensures all user records have an ID"
           - name: roles
             description: JSON array of user roles
 
@@ -62,9 +74,12 @@ sources:
         description: Payment transactions
         columns:
           - name: id
+            description: Transaction ID
             tests:
-              - unique
-              - not_null
+              - unique:
+                  description: "Validates that transaction IDs from Payload CMS are unique"
+              - not_null:
+                  description: "Ensures all transaction records have an ID"
           - name: "order"
             description: JSON object containing order data
           - name: customer
@@ -74,9 +89,12 @@ sources:
         description: Shopping carts
         columns:
           - name: id
+            description: Cart ID
             tests:
-              - unique
-              - not_null
+              - unique:
+                  description: "Validates that cart IDs from Payload CMS are unique"
+              - not_null:
+                  description: "Ensures all cart records have an ID"
           - name: customer
             description: JSON object containing customer data (null for guest carts)
 
