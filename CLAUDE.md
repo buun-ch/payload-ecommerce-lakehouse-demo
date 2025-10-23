@@ -7,12 +7,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 This is a **demonstration project** that integrates a Next.js ecommerce application with an open-source lakehouse architecture.
 
 ### Application Layer
+
 - Payload CMS-based ecommerce application built with Next.js 15
 - Full-featured online shop with products, variants, carts, orders, and Stripe payment integration
 - Built with TypeScript, React 19, TailwindCSS, and PostgreSQL
 - Based on Payload CMS ecommerce template (see [README-payload.md](./README-payload.md))
 
 ### Data Layer
+
 - **Data Ingestion**: dlt (data load tool) extracts data from Payload CMS API to Iceberg
 - **Data Transformation**: dbt transforms raw data into analytics-ready star schema using Trino
 - **Lakehouse Storage**: Apache Iceberg tables via Lakekeeper REST Catalog
@@ -22,6 +24,31 @@ This is a **demonstration project** that integrates a Next.js ecommerce applicat
 For the complete overview, see [README.md](./README.md).
 
 ## Commands
+
+This project uses two command runners:
+
+- **pnpm**: For Next.js/Payload CMS application commands
+- **just**: For task automation across the entire stack (app, dlt, dbt)
+
+### Just Command Runner
+
+[just](https://github.com/casey/just) is a command runner that manages tasks across all components of the stack.
+
+```bash
+# List all available recipes
+just
+
+# Execute recipes using module syntax
+just dbt::op-test              # Run dbt tests
+just dlt::op-run               # Run dlt ingestion
+just payload::op-seed          # Seed Payload database
+```
+
+**Key features:**
+
+- **Module-based organization**: Recipes are organized by component (`payload::`, `dbt::`, `dlt::`)
+- **Self-documenting**: Running `just` without arguments shows all available recipes with descriptions
+- **1Password integration**: Recipes prefixed with `op-` use `op run --env-file=.env.local` for secure environment variable handling
 
 ### Development
 
@@ -216,7 +243,26 @@ When modifying Payload collections/fields:
 
 ### Environment Variables
 
-Required variables (see `.env.example`):
+Environment variables are stored in separate `.env.local` files for each component:
+
+- **Payload CMS App**: `.env.local` (project root)
+- **dbt Transformation**: `data/transformation/.env.local`
+- **dlt Ingestion**: `data/ingestion/.env.local`
+
+**Important**: All `.env.local` files contain **1Password references** for secure credential management. Commands must be executed using the 1Password CLI:
+
+```bash
+# Correct: Use 1Password CLI to inject secrets
+op run --env-file=.env.local -- pnpm dev
+op run --env-file=data/transformation/.env.local -- dbt test
+op run --env-file=data/ingestion/.env.local -- python pipeline.py
+
+# Just recipes with `op-` prefix handle this automatically
+just dbt::op-test           # Internally runs: op run --env-file=.env.local -- dbt test
+just payload::op-seed       # Internally runs: op run --env-file=.env.local -- node script
+```
+
+**Required variables for Payload CMS** (see `.env.example`):
 
 - `DATABASE_URI` - PostgreSQL connection string
 - `PAYLOAD_SECRET` - Secret key for Payload
@@ -224,6 +270,18 @@ Required variables (see `.env.example`):
 - `STRIPE_SECRET_KEY` - Stripe secret key
 - `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` - Stripe publishable key
 - `STRIPE_WEBHOOKS_SIGNING_SECRET` - Stripe webhook secret
+
+**Required variables for dbt** (see `data/transformation/env.local.example`):
+
+- `TRINO_SERVER` - Trino server hostname
+- `TRINO_USER` - Trino username for authentication
+- `ICEBERG_CATALOG` - Iceberg catalog name
+
+**Required variables for dlt** (see `data/ingestion/env.local.example`):
+
+- `PAYLOAD_API_URL` - Payload CMS API endpoint
+- `ICEBERG_CATALOG_URI` - Iceberg REST catalog URI
+- `ICEBERG_WAREHOUSE` - S3/MinIO warehouse location
 
 ### Stripe Integration
 
