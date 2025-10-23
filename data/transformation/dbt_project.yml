@@ -45,7 +45,3 @@ models:
     marts:
       +materialized: table
       +schema: marts
-
-    # Example models (can be removed)
-    example:
-      +materialized: view
