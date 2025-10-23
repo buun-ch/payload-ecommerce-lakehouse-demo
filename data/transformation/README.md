@@ -201,6 +201,214 @@ just dbt::op-docs-serve
 
 Both targets write all models to Iceberg via Trino.
 
+## Documentation
+
+dbt automatically generates interactive documentation for your data models, including:
+
+- **Model lineage**: Visual data flow from sources → staging → marts
+- **Column descriptions**: Detailed documentation for each table and column
+- **Test definitions**: All configured data quality tests
+- **SQL code**: Source and compiled SQL for each model
+
+### Generating Documentation
+
+```bash
+# Generate documentation
+just dbt::op-docs-generate
+
+# Serve documentation site (opens on http://localhost:8080)
+just dbt::op-docs-serve
+```
+
+### Navigating the Documentation
+
+1. **Project Overview**: Left sidebar shows all models organized by layer (staging, marts)
+2. **Model Details**: Click any model to view:
+   - Description and metadata
+   - Column definitions with data types
+   - Configured tests
+   - Dependencies (upstream and downstream)
+3. **Lineage Graph**: Click the graph icon (bottom-right) to visualize data flow
+   - Green nodes: Source tables
+   - Blue nodes: dbt models
+   - Arrows: Data dependencies
+
+### Adding Documentation
+
+Documentation is defined in YAML files:
+
+**For sources** (`models/staging/sources.yml`):
+
+```yaml
+sources:
+  - name: ecommerce
+    tables:
+      - name: orders
+        description: Raw orders from Payload CMS
+        columns:
+          - name: id
+            description: Order ID
+```
+
+**For models** (`models/marts/schema.yml`):
+
+```yaml
+models:
+  - name: fact_orders
+    description: Fact table containing order-level transactions
+    columns:
+      - name: order_id
+        description: Unique order identifier
+```
+
+## Testing
+
+dbt provides built-in data quality testing to validate your transformations.
+
+### Running Tests
+
+```bash
+# Run all tests
+just dbt::op-test
+
+# Run tests for specific model
+just dbt::op-test --select fact_orders
+
+# Run tests for specific layer
+just dbt::op-test --select staging
+just dbt::op-test --select marts
+```
+
+### Test Output
+
+Terminal output shows real-time results:
+
+```
+Done. PASS=40 WARN=0 ERROR=0 SKIP=0 NO-OP=0 TOTAL=40
+```
+
+### Configured Tests
+
+This project includes **40 data quality tests** across sources and models:
+
+#### Source Tests (`models/staging/sources.yml`)
+
+- **Uniqueness**: Primary keys (id columns) are unique
+- **Not Null**: Required fields always have values
+
+Example:
+
+```yaml
+columns:
+  - name: id
+    tests:
+      - unique:
+          description: "Validates that order IDs from Payload CMS are unique"
+      - not_null:
+          description: "Ensures all raw order records have an ID"
+```
+
+#### Model Tests (`models/marts/schema.yml`)
+
+- **Uniqueness**: Primary keys in dimension and fact tables
+- **Not Null**: Foreign keys and required business fields
+- **Accepted Values**: Categorical fields have valid values only
+
+Example:
+
+```yaml
+columns:
+  - name: customer_segment
+    tests:
+      - accepted_values:
+          arguments:
+            values: ['Champions', 'Loyal', 'Potential Loyalists', 'New Customers', 'Dormant']
+          description: "Validates customer segment values match the RFM-based classification"
+```
+
+### Test Types
+
+| Test Type | Purpose | Example |
+| :--- | :--- | :--- |
+| `unique` | Ensures column values are unique | Primary keys |
+| `not_null` | Ensures column has no NULL values | Required fields |
+| `accepted_values` | Validates against allowed value list | Status, category fields |
+| `relationships` | Validates foreign key references | Customer ID in orders exists in customers table |
+
+### Test Results
+
+#### 1. Command Line (Real-time)
+
+The simplest way to see test results:
+
+```bash
+just dbt::op-test
+# Output shows PASS/FAIL for each test
+```
+
+#### 2. run_results.json (Detailed)
+
+After running tests, results are saved in `target/run_results.json`:
+
+```bash
+# View test summary
+cat target/run_results.json | jq '{
+  generated_at: .metadata.generated_at,
+  total_tests: [.results[] | select(.unique_id | startswith("test."))] | length,
+  passed: [.results[] | select((.unique_id | startswith("test.")) and .status == "success")] | length
+}'
+
+# List all test results
+cat target/run_results.json | jq -r '.results[] |
+  select(.unique_id | startswith("test.")) |
+  {test: .unique_id, status: .status}'
+```
+
+#### 3. Advanced: Test Result Visualization
+
+For test result dashboards and monitoring, consider:
+
+- **[Elementary](https://www.elementary-data.com/)**: Open-source data observability with test result UI, alerts, and lineage
+- **[dbt Cloud](https://www.getdbt.com/product/dbt-cloud)**: Official SaaS with test result UI and CI/CD
+- **[Re_data](https://www.getre.io/)**: Open-source data quality monitoring
+
+### Adding Custom Tests
+
+#### Generic Tests
+
+Add to model YAML:
+
+```yaml
+columns:
+  - name: order_total
+    tests:
+      - not_null
+      - dbt_utils.accepted_range:
+          min_value: 0
+          max_value: 1000000
+```
+
+#### Singular Tests
+
+Create SQL file in `tests/` directory:
+
+```sql
+-- tests/assert_positive_order_amounts.sql
+SELECT *
+FROM {{ ref('fact_orders') }}
+WHERE amount_usd < 0
+```
+
+The test fails if any rows are returned.
+
+### Best Practices
+
+1. **Test primary keys**: Always add `unique` and `not_null` to primary keys
+2. **Test foreign keys**: Use `relationships` test to validate referential integrity
+3. **Add descriptions**: Explain what each test validates and why it matters
+4. **Run before deployment**: Include `dbt test` in your CI/CD pipeline
+5. **Monitor failures**: Set up alerts for test failures in production
+
 ## Analytics & BI
 
 For sample analytical queries and Metabase dashboard examples, see:

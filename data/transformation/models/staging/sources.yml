@@ -13,8 +13,10 @@ sources:
           - name: id
             description: Order ID
             tests:
-              - unique
-              - not_null
+              - unique:
+                  description: "Validates that order IDs from Payload CMS are unique"
+              - not_null:
+                  description: "Ensures all raw order records have an ID from Payload CMS"
           - name: items
             description: JSON array of order items
           - name: customer
