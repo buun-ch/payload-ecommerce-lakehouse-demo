@@ -7,6 +7,12 @@ const NEXT_PUBLIC_SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL || 'http://loc
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
+  // Disable health check request logs when DISABLE_HEALTH_REQUEST_LOGS=1
+  logging: process.env.DISABLE_HEALTH_REQUEST_LOGS === '1' ? {
+    incomingRequests: {
+      ignore: [/healthz/],
+    },
+  } : undefined,
   images: {
     remotePatterns: [
       ...[NEXT_PUBLIC_SERVER_URL /* 'https://example.com' */].map((item) => {

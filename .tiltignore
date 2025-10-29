@@ -1,0 +1,39 @@
+# Tilt ignore file
+# Files and directories to exclude from sync
+
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+.next/
+dist/
+out/
+
+# Version control
+.git/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment files (handled separately)
+# .env*
+.env.just
+
+/charts
+/data
+/docs
+*.md

@@ -4,11 +4,7 @@ import configPromise from '@payload-config'
 
 export const dynamic = 'force-dynamic'
 
-const disableHealthRequestLogs = process.env.DISABLE_HEALTH_REQUEST_LOGS === '1'
-
 export async function GET() {
-  const startTime = Date.now()
-
   try {
     // Basic health check
     const health = {
@@ -32,23 +28,13 @@ export async function GET() {
         // Database check failed, but don't fail the health check
         // This allows the pod to stay alive but marked as not ready
         health.database = 'error'
-        if (!disableHealthRequestLogs) {
-          console.error('Database health check failed:', dbError)
-        }
+        console.error('Database health check failed:', dbError)
       }
-    }
-
-    const duration = Date.now() - startTime
-    if (!disableHealthRequestLogs) {
-      console.log(`Health check successful in ${duration}ms`)
     }
 
     return NextResponse.json(health, { status: 200 })
   } catch (error) {
-    const duration = Date.now() - startTime
-    if (!disableHealthRequestLogs) {
-      console.error(`Health check failed in ${duration}ms:`, error)
-    }
+    console.error('Health check failed:', error)
     return NextResponse.json(
       {
         status: 'error',
