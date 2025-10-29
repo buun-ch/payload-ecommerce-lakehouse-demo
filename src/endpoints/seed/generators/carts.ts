@@ -101,11 +101,11 @@ export async function generateCarts(
     const purchasedAt = abandoned
       ? null
       : faker.date
-          .between({
-            from: createdAt,
-            to: endDate,
-          })
-          .toISOString()
+        .between({
+          from: createdAt,
+          to: endDate,
+        })
+        .toISOString()
 
     const cartData = {
       customer: customer?.id || null,

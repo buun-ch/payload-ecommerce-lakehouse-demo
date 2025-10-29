@@ -51,9 +51,11 @@ export function EditItemQuantityButton({ type, item }: { item: CartItem; type: '
 
           if (item.id) {
             if (type === 'plus') {
-              incrementItem(item.id)
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              incrementItem(item.id as any)
             } else {
-              decrementItem(item.id)
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              decrementItem(item.id as any)
             }
           }
         }}

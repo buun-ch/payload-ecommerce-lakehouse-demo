@@ -24,7 +24,8 @@ export function DeleteItemButton({ item }: { item: CartItem }) {
         disabled={!itemId}
         onClick={(e: React.FormEvent<HTMLButtonElement>) => {
           e.preventDefault()
-          if (itemId) removeItem(itemId)
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          if (itemId) removeItem(itemId as any)
         }}
         type="button"
       >

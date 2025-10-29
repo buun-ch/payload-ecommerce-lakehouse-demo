@@ -289,7 +289,7 @@ export const enhancedSeed = async ({
     [sizeVariantType, colorVariantType],
     {
       enableImageGeneration,
-      fallbackImageId: noImageMedia.id as string,
+      fallbackImageId: noImageMedia.id,
       sizeVariantOptions,
       colorVariantOptions,
     },

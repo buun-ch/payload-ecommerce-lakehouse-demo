@@ -12,18 +12,15 @@
 
 import type { Payload } from 'payload'
 import { faker } from '@faker-js/faker'
-import type { Order, Product, Transaction } from '@/payload-types'
+import type { Order, OrderStatus, Product } from '@/payload-types'
 import {
   weightedChoice,
-  generateOrderAmount,
   generateRecentDateWithWeekendBias,
   ORDER_PRODUCT_SELECTION,
   ORDER_STATUS,
   type ProductPopularity,
-  type CustomerSegment,
 } from '../distributions'
 import type { CustomerWithSegment } from './customers'
-import type { ProductGenerationResult } from './products'
 
 export interface OrderGenerationContext {
   customers: CustomerWithSegment[]
@@ -57,7 +54,6 @@ export async function generateOrders(
   while (generatedCount < count && attempts < maxAttempts) {
     // Select random customer
     const customer = faker.helpers.arrayElement(context.customers)
-    const segment = customer._segment
 
     // Generate order items (1-5 items per order)
     const numItems = faker.number.int({ min: 1, max: 5 })
@@ -126,7 +122,7 @@ export async function generateOrders(
     attempts++
 
     // Determine order status
-    const status = weightedChoice(ORDER_STATUS)
+    const status = weightedChoice(ORDER_STATUS) as OrderStatus
 
     // Generate order first
     const orderData = {
@@ -250,9 +246,13 @@ function countOrdersByPopularity(
   for (const order of orders) {
     if (order.items && order.items.length > 0) {
       for (const item of order.items) {
+        if (!item.product) continue
+
         const productId = typeof item.product === 'object'
           ? item.product.id
           : item.product
+
+        if (productId === undefined) continue
 
         const popularity = productIdToPopularity.get(productId)
         if (popularity) {

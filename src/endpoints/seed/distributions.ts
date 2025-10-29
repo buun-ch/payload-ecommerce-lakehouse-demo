@@ -140,19 +140,19 @@ export const VARIANTS_ENABLED_RATE = 0.4
  * Order status distribution
  */
 export const ORDER_STATUS = [
-  { weight: 70, value: 'completed' },
-  { weight: 20, value: 'processing' },
-  { weight: 8, value: 'cancelled' },
-  { weight: 2, value: 'refunded' },
+  { weight: 70, value: 'completed' as const },
+  { weight: 20, value: 'processing' as const },
+  { weight: 8, value: 'cancelled' as const },
+  { weight: 2, value: 'refunded' as const },
 ]
 
 /**
  * Transaction status distribution
  */
 export const TRANSACTION_STATUS = [
-  { weight: 92, value: 'succeeded' },
-  { weight: 5, value: 'pending' },
-  { weight: 3, value: 'failed' },
+  { weight: 92, value: 'succeeded' as const },
+  { weight: 5, value: 'pending' as const },
+  { weight: 3, value: 'failed' as const },
 ]
 
 /**
@@ -170,11 +170,6 @@ export const CATEGORY_POPULARITY = [
  * Categories with direct Faker methods use simplified types
  */
 export const CATEGORY_PRODUCT_TYPES: Record<string, string[]> = {
-  // Direct Faker methods - simplified types
-  Books: ['Book'], // faker.book.title() generates full title
-  Food: ['Food'], // faker.food.dish() generates full dish name
-  Music: ['Album', 'Instrument'], // faker.music.songName() or instrument names
-
   // Standard categories
   Electronics: [
     'Laptop',

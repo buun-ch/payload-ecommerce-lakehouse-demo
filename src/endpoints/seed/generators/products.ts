@@ -13,13 +13,12 @@
 import type { Payload } from 'payload'
 import { faker } from '@faker-js/faker'
 import { createClient } from 'pexels'
-import type { Category, Product, VariantType, VariantOption, Media, Variant } from '@/payload-types'
+import type { Category, Product, VariantType, VariantOption, Media } from '@/payload-types'
 import {
   weightedChoice,
   generatePrice,
   generateInventory,
   PRODUCT_POPULARITY,
-  VARIANTS_ENABLED_RATE,
   CATEGORY_PRODUCT_TYPES,
   TECH_BRANDS,
   TECH_ADJECTIVES,
@@ -153,9 +152,9 @@ export interface ProductGenerationResult {
  */
 async function generateImageForProduct(
   payload: Payload,
-  categoryName: string,
+  _categoryName: string,
   productType: string,
-): Promise<string | null> {
+): Promise<number | null> {
   if (!PEXELS_API_KEY) {
     return null
   }
@@ -204,7 +203,7 @@ async function generateImageForProduct(
         },
       })) as Media
 
-      return media.id as string
+      return media.id
     }
   } catch (error) {
     payload.logger.warn(`Failed to generate image for "${productType}": ${error}`)
@@ -223,7 +222,7 @@ export async function generateProducts(
   variantTypes: VariantType[],
   options: {
     enableImageGeneration?: boolean
-    fallbackImageId?: string
+    fallbackImageId?: number
     sizeVariantOptions?: VariantOption[]
     colorVariantOptions?: VariantOption[]
   } = {},
@@ -255,9 +254,6 @@ export async function generateProducts(
     // Generate price based on log-normal distribution
     const priceInUSD = generatePrice()
 
-    // Determine if product has variants
-    const enableVariants = Math.random() < VARIANTS_ENABLED_RATE
-
     // Generate inventory with realistic distribution
     const inventory = generateInventory()
 
@@ -268,7 +264,7 @@ export async function generateProducts(
     const { title, productType } = generateProductName(category)
 
     // Generate image if enabled
-    let galleryImages: string[] = []
+    let galleryImages: number[] = []
     if (enableImageGeneration) {
       if (PEXELS_API_KEY) {
         // Try to get image from Pexels
@@ -294,7 +290,7 @@ export async function generateProducts(
 
     // Determine which variant types this product should have
     const productVariantTypes = getVariantTypesForProduct(productType)
-    const productVariantTypeIds: (string | number)[] = []
+    const productVariantTypeIds: number[] = []
     const [sizeVariantType, colorVariantType] = variantTypes
 
     if (productVariantTypes.includes('size')) {
@@ -331,10 +327,16 @@ export async function generateProducts(
                 {
                   type: 'text',
                   text: description,
+                  version: 1,
                 },
               ],
+              version: 1,
             },
           ],
+          direction: 'ltr' as const,
+          format: '' as const,
+          indent: 0,
+          version: 1,
         },
       },
     }
@@ -352,7 +354,7 @@ export async function generateProducts(
       if (variantTypesToCreate.length > 0) {
         // Generate all possible combinations first
         const allCombinations: Array<{
-          options: (string | number)[]
+          options: number[]
           labels: string[]
         }> = []
 
