@@ -1,0 +1,22 @@
+image:
+  repository: payload-ecommerce-lakehouse-demo-dev
+  pullPolicy: IfNotPresent
+
+telemetry:
+  enabled: true
+
+logging:
+  health_request: false  # Enable/disable health check request logs
+
+env:
+  - name: NODE_ENV
+    value: "development"
+  - name: DATABASE_URI
+    value: "postgres://ecommerce:ecommerce@postgres-cluster-rw.postgres:5432/ecommerce"
+  - name: PAYLOAD_SECRET
+    value: "your-secret-key-here"
+  - name: NEXT_PUBLIC_SERVER_URL
+    value: "http://localhost:3000"
+
+ingress:
+  enabled: false

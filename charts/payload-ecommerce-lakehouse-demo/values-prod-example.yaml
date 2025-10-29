@@ -1,0 +1,89 @@
+image:
+  repository: payload-ecommerce-lakehouse-demo
+  tag: stable
+  pullPolicy: IfNotPresent
+
+imagePullSecrets:
+  - name: regcred
+
+env:
+  - name: NODE_ENV
+    value: "production"
+  - name: DATABASE_URI
+    valueFrom:
+      secretKeyRef:
+        name: db-credentials
+        key: database-uri
+  - name: PAYLOAD_SECRET
+    valueFrom:
+      secretKeyRef:
+        name: payload-secrets
+        key: payload-secret
+  - name: NEXT_PUBLIC_SERVER_URL
+    value: "https://app.example.com"
+  - name: STRIPE_SECRET_KEY
+    valueFrom:
+      secretKeyRef:
+        name: stripe-secrets
+        key: secret-key
+        optional: true
+  - name: NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+    valueFrom:
+      secretKeyRef:
+        name: stripe-secrets
+        key: publishable-key
+        optional: true
+  - name: STRIPE_WEBHOOKS_SIGNING_SECRET
+    valueFrom:
+      secretKeyRef:
+        name: stripe-secrets
+        key: webhook-secret
+        optional: true
+
+# Production environment health checks
+livenessProbe:
+  httpGet:
+    path: /healthz
+    port: http
+  initialDelaySeconds: 15
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /healthz
+    port: http
+  initialDelaySeconds: 10
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 250m
+    memory: 256Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+  hosts:
+    - host: app.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: app-tls
+      hosts:
+        - app.example.com
