@@ -1,4 +1,4 @@
-set dotenv-filename := ".env.local"
+set dotenv-filename := ".env.just"
 
 export TRINO_HOST := env("TRINO_HOST", "")
 export TRINO_USER := env("TRINO_USER", "")

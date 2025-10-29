@@ -32,7 +32,7 @@ seed preset="medium":
 
 # Seed database with op run (to load Pexels API key)
 op-seed preset="medium":
-    op run --env-file=.env.local -- pnpm seed:{{ preset }}
+    op run --env-file=.env.just -- pnpm seed:{{ preset }}
 
 # Clear all seeded data from database
 clear-seed:
