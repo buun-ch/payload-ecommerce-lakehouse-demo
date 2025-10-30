@@ -19,6 +19,8 @@ env:
       secretKeyRef:
         name: payload-secrets
         key: payload-secret
+  - name: PAYLOAD_PUBLIC_SERVER_URL
+    value: "https://app.example.com"
   - name: NEXT_PUBLIC_SERVER_URL
     value: "https://app.example.com"
   - name: STRIPE_SECRET_KEY

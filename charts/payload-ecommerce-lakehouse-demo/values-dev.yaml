@@ -12,9 +12,11 @@ env:
   - name: NODE_ENV
     value: "development"
   - name: DATABASE_URI
-    value: "postgres://ecommerce:ecommerce@postgres-cluster-rw.postgres:5432/ecommerce"
+    value: "postgres://ecommerce:ecommerce@postgres-cluster-rw.postgres:5432/ecommerce?keepalives=1&keepalives_idle=30&keepalives_interval=10&keepalives_count=5"
   - name: PAYLOAD_SECRET
     value: "your-secret-key-here"
+  - name: PAYLOAD_PUBLIC_SERVER_URL
+    value: "http://localhost:3000"
   - name: NEXT_PUBLIC_SERVER_URL
     value: "http://localhost:3000"
 
