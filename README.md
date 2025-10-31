@@ -124,6 +124,29 @@ Built with [Payload CMS ecommerce template](./README-payload.md):
    pnpm dev
    ```
 
+   **Database Configuration:**
+
+   The `DATABASE_URI` environment variable is used by Payload CMS's PostgreSQL adapter (`@payloadcms/db-postgres`) to connect to the database. For long-running operations like seeding large datasets, you may need to add keepalive parameters to prevent connection timeouts:
+
+   ```bash
+   DATABASE_URI=postgres://user:pass@host:port/db?keepalives=1&keepalives_idle=30&keepalives_interval=10&keepalives_count=5
+   ```
+
+   **Keepalive parameters:**
+   - `keepalives=1` - Enable TCP keepalive
+   - `keepalives_idle=30` - Start sending keepalives after 30 seconds of idle time
+   - `keepalives_interval=10` - Send keepalives every 10 seconds
+   - `keepalives_count=5` - Close connection after 5 failed keepalives
+
+   These parameters are particularly useful when:
+   - Seeding large datasets (medium/large presets)
+   - Running long-running operations over network connections
+   - Using Telepresence for remote database access
+
+   **References:**
+   - [node-postgres connection parameters](https://node-postgres.com/features/connecting#connection-uri)
+   - [PostgreSQL libpq connection parameters](https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-KEEPALIVES)
+
    **Note**: This project uses [just](https://github.com/casey/just) as a command runner. Run `just` without arguments to see all available recipes.
 
    See [README-payload.md](./README-payload.md) for detailed application setup.
