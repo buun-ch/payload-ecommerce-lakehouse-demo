@@ -16,9 +16,9 @@ env:
   - name: PAYLOAD_SECRET
     value: "your-secret-key-here"
   - name: PAYLOAD_PUBLIC_SERVER_URL
-    value: "http://localhost:3000"
+    value: "http://payload-ecommerce-lakehouse-demo.default:3000"
   - name: NEXT_PUBLIC_SERVER_URL
-    value: "http://localhost:3000"
+    value: "http://payload-ecommerce-lakehouse-demo.default:3000"
 
 ingress:
   enabled: false
