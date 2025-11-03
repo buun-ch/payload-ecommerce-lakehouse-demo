@@ -11,7 +11,7 @@ import dlt
 from dlt.common.pipeline import LoadInfo
 
 from destinations.iceberg_rest import iceberg_rest_catalog
-from sources.payload_cms import payload_cms_incremental, payload_cms_source
+from sources.payload_cms import payload_cms_source
 
 # Enable debug logging for dlt and REST client
 # import logging
@@ -46,6 +46,18 @@ def load() -> LoadInfo:
         Base URL of Payload CMS API
     PAYLOAD_CMS_TOKEN : str, required
         JWT authentication token for Payload CMS
+    OIDC_CLIENT_ID : str, optional
+        OAuth2 client ID for Lakekeeper authentication
+    OIDC_CLIENT_SECRET : str, optional
+        OAuth2 client secret for Lakekeeper authentication
+    KEYCLOAK_TOKEN_URL : str, optional
+        Keycloak OAuth2 token endpoint (e.g., https://auth.example.com/realms/realm/protocol/openid-connect/token)
+    OAUTH2_SCOPE : str, default "lakekeeper"
+        OAuth2 scope for token requests (must match Keycloak client scope)
+    ICEBERG_CATALOG_URL : str, default "http://localhost:8181/catalog"
+        Iceberg REST Catalog endpoint URL
+    ICEBERG_WAREHOUSE : str, default "ecommerce"
+        Iceberg warehouse name
 
     Examples
     --------
@@ -107,26 +119,15 @@ def load() -> LoadInfo:
         f"=== PRODUCTION MODE: Loading to Iceberg (write_disposition={write_disposition}) ==="
     )
 
-    # Use incremental source for merge mode, regular source for replace mode
-    if write_disposition == "merge":
-        print("Using incremental loading (merge mode)")
-        source = payload_cms_incremental(
-            base_url=base_url,
-            collections=collections,
-            auth_token=auth_token,
-            limit=100,
-            depth=2,
-            initial_timestamp=initial_timestamp(),
-        )
-    else:
-        print("Using full refresh (replace mode)")
-        source = payload_cms_source(
-            base_url=base_url,
-            collections=collections,
-            auth_token=auth_token,
-            limit=1000,  # Increased to reduce pagination (3 pages for 3000 records)
-            depth=2,
-        )
+    source = payload_cms_source(
+        base_url=base_url,
+        collections=collections,
+        auth_token=auth_token,
+        limit=1000,
+        depth=2,
+        incremental=(write_disposition == "merge"),
+        initial_timestamp=initial_timestamp(),
+    )
 
     pipeline = dlt.pipeline(
         pipeline_name="payload_to_iceberg",

@@ -44,13 +44,43 @@ def get_catalog() -> RestCatalog:
     -----
     This function is cached to reuse the same catalog instance across multiple
     calls, improving performance and reducing overhead.
+
+    Authentication is configured via environment variables:
+    - OIDC_CLIENT_ID + OIDC_CLIENT_SECRET: OAuth2 client credentials (recommended)
+    - KEYCLOAK_TOKEN_URL: OAuth2 token endpoint (required for OAuth2)
+    - OAUTH2_SCOPE: OAuth2 scope (default: "lakekeeper")
+    - ICEBERG_TOKEN: Static bearer token (legacy, for backward compatibility)
     """
-    return RestCatalog(
-        name="rest_catalog",
-        uri=iceberg_catalog_url(),
-        warehouse=iceberg_warehouse(),
-        token=iceberg_token(),
-    )
+    catalog_config = {
+        "name": "rest_catalog",
+        "uri": iceberg_catalog_url(),
+        "warehouse": iceberg_warehouse(),
+    }
+
+    # Prefer OAuth2 client credentials over static token
+    client_id = os.getenv("OIDC_CLIENT_ID")
+    client_secret = os.getenv("OIDC_CLIENT_SECRET")
+
+    if client_id and client_secret:
+        # Use OAuth2 client credentials (format: "client_id:client_secret")
+        catalog_config["credential"] = f"{client_id}:{client_secret}"
+        # Specify external OAuth2 provider token endpoint (Keycloak)
+        # Lakekeeper v0.9.x requires external OAuth2 provider instead of /v1/oauth/tokens
+        token_url = keycloak_token_url()
+        if token_url:
+            catalog_config["oauth2-server-uri"] = token_url
+        # Specify OAuth2 scope (default: "lakekeeper" for Keycloak)
+        # PyIceberg defaults to "catalog" scope, but Keycloak uses "lakekeeper"
+        scope = oauth2_scope()
+        if scope:
+            catalog_config["scope"] = scope
+    else:
+        # Fallback to static token for backward compatibility
+        token = iceberg_token()
+        if token:
+            catalog_config["token"] = token
+
+    return RestCatalog(**catalog_config)
 
 
 def iceberg_catalog_url() -> str:
@@ -99,6 +129,43 @@ def iceberg_token() -> str:
         Authentication token for REST Catalog, empty string if not set
     """
     return os.getenv("ICEBERG_TOKEN", "")
+
+
+def keycloak_token_url() -> str:
+    """
+    Get Keycloak OAuth2 token endpoint from environment.
+
+    Returns
+    -------
+    str
+        Keycloak token endpoint URL for OAuth2 authentication, empty string if not set
+
+    Notes
+    -----
+    This endpoint is required when using OAuth2 client credentials flow with Lakekeeper.
+    Lakekeeper v0.9.x requires external OAuth2 provider (Keycloak) instead of the
+    deprecated /v1/oauth/tokens endpoint.
+
+    Example: https://auth.example.com/realms/buunstack/protocol/openid-connect/token
+    """
+    return os.getenv("KEYCLOAK_TOKEN_URL", "")
+
+
+def oauth2_scope() -> str:
+    """
+    Get OAuth2 scope for Lakekeeper authentication from environment.
+
+    Returns
+    -------
+    str
+        OAuth2 scope for token requests, defaults to "lakekeeper"
+
+    Notes
+    -----
+    PyIceberg's default scope is "catalog", but Keycloak-authenticated Lakekeeper
+    requires the "lakekeeper" scope to include the audience claim in JWT tokens.
+    """
+    return os.getenv("OAUTH2_SCOPE", "lakekeeper")
 
 
 def batch_size() -> int:
@@ -158,8 +225,12 @@ def iceberg_rest_catalog(items: TDataItems, table: TTableSchema) -> None:
         Warehouse identifier
     ICEBERG_NAMESPACE : str, default "ecommerce"
         Namespace (database) for tables
+    OIDC_CLIENT_ID : str, optional
+        OAuth2 client ID for authentication (recommended)
+    OIDC_CLIENT_SECRET : str, optional
+        OAuth2 client secret for authentication (recommended)
     ICEBERG_TOKEN : str, optional
-        Authentication token for REST Catalog
+        Static bearer token for REST Catalog (legacy, deprecated)
     BATCH_SIZE : int, default 1000
         Number of records per batch
 

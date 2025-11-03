@@ -21,7 +21,13 @@ Create `data/ingestion/.env.local`:
 ICEBERG_CATALOG_URL="http://localhost:8181/catalog"
 ICEBERG_WAREHOUSE="ecommerce"
 ICEBERG_NAMESPACE="ecommerce"
-ICEBERG_TOKEN=""  # Optional: authentication token for REST Catalog
+
+# Authentication (choose one method):
+# Method 1: OAuth2 Client Credentials (recommended for production/Airflow)
+OIDC_CLIENT_ID=""        # OAuth2 client ID
+OIDC_CLIENT_SECRET=""    # OAuth2 client secret
+# Method 2: Static Bearer Token (legacy, tokens expire quickly)
+# ICEBERG_TOKEN=""       # Authentication token for REST Catalog
 
 # Payload CMS Configuration
 PAYLOAD_CMS_URL="http://localhost:3000/api"
@@ -45,7 +51,13 @@ For secure secret management with 1Password CLI (op run), use secret references 
 
 ```bash
 # In .env.local, use 1Password references
-ICEBERG_TOKEN="op://Personal/lakekeeper token/credential"
+# OAuth2 Client Credentials (recommended)
+OIDC_CLIENT_ID="op://Personal/lakekeeper-service/username"
+OIDC_CLIENT_SECRET="op://Personal/lakekeeper-service/credential"
+
+# Or static token (legacy)
+# ICEBERG_TOKEN="op://Personal/lakekeeper-token/credential"
+
 PAYLOAD_CMS_TOKEN="op://Personal/Payload ecommerce/credential"
 ```
 
@@ -134,24 +146,31 @@ PIPELINE_MODE=debug just dlt::op-run
 | `ICEBERG_CATALOG_URL` | `http://localhost:8181/catalog` | REST Catalog API endpoint URL |
 | `ICEBERG_WAREHOUSE` | `ecommerce` | Warehouse identifier |
 | `ICEBERG_NAMESPACE` | `ecommerce` | Namespace (database) for tables |
-| `ICEBERG_TOKEN` | (optional) | Authentication token for REST Catalog |
+| `OIDC_CLIENT_ID` | (optional) | OAuth2 client ID for authentication (recommended for production) |
+| `OIDC_CLIENT_SECRET` | (optional) | OAuth2 client secret for authentication (recommended for production) |
+| `ICEBERG_TOKEN` | (optional) | Static bearer token for REST Catalog (legacy, deprecated) |
 | `BATCH_SIZE` | `1000` | Number of records to process per batch |
+
+**Authentication Methods:**
+
+- **OAuth2 Client Credentials (recommended)**: Set `OIDC_CLIENT_ID` and `OIDC_CLIENT_SECRET`. Tokens are automatically managed by PyIceberg. Ideal for Airflow and long-running processes.
+- **Static Token (legacy)**: Set `ICEBERG_TOKEN`. Note that tokens may expire quickly, requiring manual refresh.
 
 ### Write Disposition Modes
 
 - **`merge`** (default): Delete rows matching primary keys, then append new data (upsert)
-  - ✅ **Recommended for paginated REST API sources** (like Payload CMS)
-  - Works correctly with incremental page streaming
-  - Safe for both full refresh and incremental loads
+    - ✅ **Recommended for paginated REST API sources** (like Payload CMS)
+    - Works correctly with incremental page streaming
+    - Safe for both full refresh and incremental loads
 
 - **`replace`**: Delete all existing data, then append new data (full refresh)
-  - ⚠️ **NOT compatible with paginated sources!**
-  - `rest_api_source` yields pages one by one, and `replace` overwrites on each page
-  - Result: Only the last page remains in the table
-  - Only use this with non-paginated sources or sources that buffer all data first
+    - ⚠️ **NOT compatible with paginated sources!**
+    - `rest_api_source` yields pages one by one, and `replace` overwrites on each page
+    - Result: Only the last page remains in the table
+    - Only use this with non-paginated sources or sources that buffer all data first
 
 - **`append`**: Simply append new data without deletion
-  - May create duplicates if same records are loaded multiple times
+    - May create duplicates if same records are loaded multiple times
 
 - **`skip`**: Skip loading if table already exists
 
@@ -273,11 +292,13 @@ PIPELINE_MODE=debug python payload_pipeline.py
 The pipeline extracts data from these Payload CMS collections:
 
 **Fact Data Sources:**
+
 - `/api/orders` - Order transactions
 - `/api/transactions` - Payment transactions
 - `/api/carts` - Shopping cart activities
 
 **Dimension Data Sources:**
+
 - `/api/products` - Product master data
 - `/api/variants` - Product variant details
 - `/api/categories` - Product categories
@@ -297,6 +318,7 @@ The pipeline extracts data from these Payload CMS collections:
 | `select` | string | - | Fields to return (comma-separated) |
 
 **Where Query Operators:**
+
 - `equals`, `not_equals`
 - `greater_than`, `greater_than_equal`
 - `less_than`, `less_than_equal`
@@ -307,26 +329,31 @@ The pipeline extracts data from these Payload CMS collections:
 ### API Examples
 
 **Incremental sync (updated since timestamp):**
+
 ```bash
 curl "http://localhost:3000/api/orders?where[updatedAt][greater_than_equal]=2024-12-10T00:00:00Z&limit=100"
 ```
 
 **With sorting:**
+
 ```bash
 curl "http://localhost:3000/api/orders?sort=-createdAt&limit=100"
 ```
 
 **With related data (depth):**
+
 ```bash
 curl "http://localhost:3000/api/orders?depth=2&limit=100"
 ```
 
 **With field selection:**
+
 ```bash
 curl "http://localhost:3000/api/products?select=id,title,slug,priceInUSD&limit=100"
 ```
 
 **Response Format:**
+
 ```json
 {
   "docs": [ /* array of records */ ],
