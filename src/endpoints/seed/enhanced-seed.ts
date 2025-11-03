@@ -18,7 +18,7 @@
 
 import type { CollectionSlug, GlobalSlug, Payload, PayloadRequest } from 'payload'
 import type { Media } from '@/payload-types'
-import { getPreset, getPresetByName, type SeedPreset } from './presets'
+import { getPresetByName, type SeedPreset } from './presets'
 import { generateProducts } from './generators/products'
 import { generateCustomers } from './generators/customers'
 import { generateOrders } from './generators/orders'
@@ -153,7 +153,7 @@ export const enhancedSeed = async ({
         where: {},
       })
     }
-  } catch (error) {
+  } catch (_) {
     payload.logger.warn('Error clearing users')
   }
 

@@ -158,7 +158,7 @@ export const seed = async ({
     imageTshirtBlack,
     imageTshirtWhite,
     imageHero,
-    accessoriesCategory,
+    _accessoriesCategory,
     tshirtsCategory,
     hatsCategory,
   ] = await Promise.all([
@@ -277,17 +277,11 @@ export const seed = async ({
     }),
   })
 
-  let hoodieID: number | string = productTshirt.id
-
-  if (payload.db.defaultIDType === 'text') {
-    hoodieID = `"${hoodieID}"`
-  }
-
   const [
     smallTshirtHoodieVariant,
     mediumTshirtHoodieVariant,
-    largeTshirtHoodieVariant,
-    xlargeTshirtHoodieVariant,
+    _largeTshirtHoodieVariant,
+    _xlargeTshirtHoodieVariant,
   ] = await Promise.all(
     [small, medium, large, xlarge].map((variantOption) =>
       payload.create({
@@ -325,7 +319,7 @@ export const seed = async ({
 
   payload.logger.info(`— Seeding pages...`)
 
-  const [_, contactPage] = await Promise.all([
+  const [_homePage, _contactPage] = await Promise.all([
     payload.create({
       collection: 'pages',
       depth: 0,
@@ -345,7 +339,7 @@ export const seed = async ({
 
   payload.logger.info(`— Seeding addresses...`)
 
-  const customerUSAddress = await payload.create({
+  await payload.create({
     collection: 'addresses',
     depth: 0,
     data: {
@@ -354,7 +348,7 @@ export const seed = async ({
     },
   })
 
-  const customerUKAddress = await payload.create({
+  await payload.create({
     collection: 'addresses',
     depth: 0,
     data: {
@@ -365,7 +359,7 @@ export const seed = async ({
 
   payload.logger.info(`— Seeding transactions...`)
 
-  const pendingTransaction = await payload.create({
+  await payload.create({
     collection: 'transactions',
     data: {
       currency: 'USD',
@@ -395,16 +389,10 @@ export const seed = async ({
     },
   })
 
-  let succeededTransactionID: number | string = succeededTransaction.id
-
-  if (payload.db.defaultIDType === 'text') {
-    succeededTransactionID = `"${succeededTransactionID}"`
-  }
-
   payload.logger.info(`— Seeding carts...`)
 
   // This cart is open as it's created now
-  const openCart = await payload.create({
+  await payload.create({
     collection: 'carts',
     data: {
       customer: customer.id,
@@ -422,7 +410,7 @@ export const seed = async ({
   const oldTimestamp = new Date('2023-01-01T00:00:00Z').toISOString()
 
   // Cart is abandoned because it was created long in the past
-  const abandonedCart = await payload.create({
+  await payload.create({
     collection: 'carts',
     data: {
       currency: 'USD',
@@ -437,7 +425,7 @@ export const seed = async ({
   })
 
   // Cart is purchased because it has a purchasedAt date
-  const completedCart = await payload.create({
+  await payload.create({
     collection: 'carts',
     data: {
       customer: customer.id,
@@ -459,15 +447,9 @@ export const seed = async ({
     },
   })
 
-  let completedCartID: number | string = completedCart.id
-
-  if (payload.db.defaultIDType === 'text') {
-    completedCartID = `"${completedCartID}"`
-  }
-
   payload.logger.info(`— Seeding orders...`)
 
-  const orderInCompleted = await payload.create({
+  await payload.create({
     collection: 'orders',
     data: {
       amount: 7499,
@@ -491,7 +473,7 @@ export const seed = async ({
     },
   })
 
-  const orderInProcessing = await payload.create({
+  await payload.create({
     collection: 'orders',
     data: {
       amount: 7499,
