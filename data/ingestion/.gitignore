@@ -10,3 +10,4 @@ secrets.toml
 *.wal
 
 .env.local*
+!.env.local.example

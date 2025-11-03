@@ -14,7 +14,7 @@ pip install -r requirements.txt
 # Copy configuration
 mkdir -p ~/.dbt
 cp profiles.yml ~/.dbt/profiles.yml
-cp env.local.example .env.local
+cp .env.local.example .env.local
 
 # Run transformations (default: dev environment)
 just dbt::op-run
@@ -53,7 +53,7 @@ just dbt::op-test
 3. **Create environment file (optional):**
 
    ```bash
-   cp env.local.example .env.local
+   cp .env.local.example .env.local
    ```
 
    Edit `.env.local` if you need to override default settings.
