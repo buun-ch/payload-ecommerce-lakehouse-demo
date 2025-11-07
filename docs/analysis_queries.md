@@ -455,41 +455,24 @@ ORDER BY cohort_month DESC, months_since_first ASC;
 ### 5.2 RFM Analysis (Recency, Frequency, Monetary)
 
 ```sql
-WITH customer_rfm AS (
-    SELECT
-        c.customer_id,
-        c.customer_name,
-        c.customer_email,
-        DATE_DIFF('day', CAST(c.last_order_date AS DATE), CURRENT_DATE) AS recency_days,
-        c.total_orders AS frequency,
-        c.lifetime_value_usd AS monetary
-    FROM ecommerce_marts.dim_customers c
-    WHERE c.total_orders > 0
-)
 SELECT
-    customer_id,
-    customer_name,
-    customer_email,
-    recency_days,
-    frequency,
-    ROUND(monetary, 2) AS monetary_usd,
-    CASE
-        WHEN recency_days <= 30 AND frequency >= 5 AND monetary >= 500 THEN 'Champions'
-        WHEN recency_days <= 30 AND frequency >= 3 THEN 'Loyal Customers'
-        WHEN recency_days <= 60 AND monetary >= 300 THEN 'Potential Loyalists'
-        WHEN recency_days <= 90 THEN 'Recent Customers'
-        WHEN recency_days > 180 THEN 'At Risk'
-        ELSE 'Needs Attention'
-    END AS rfm_segment
-FROM customer_rfm
-ORDER BY monetary DESC;
+    c.customer_name,
+    c.customer_email,
+    DATE_DIFF('day', CAST(c.last_order_date AS DATE), CURRENT_DATE) AS recency_days,
+    c.total_orders AS frequency,
+    ROUND(c.lifetime_value_usd, 2) AS monetary_usd,
+    c.customer_segment
+FROM ecommerce_marts.dim_customers c
+WHERE c.total_orders > 0
+ORDER BY monetary_usd DESC
+LIMIT 20;
 ```
 
 **Superset Visualization**:
 
 - **Chart Type**: Bubble Chart or Table
 - **Bubble Chart Configuration**:
-    - Dimension: `rfm_segment` (for segment grouping)
+    - Dimension: `customer_segment` (for segment grouping)
     - Entity: `customer_name`
     - X Axis: `recency_days`
     - Y Axis: `monetary_usd`
@@ -498,7 +481,7 @@ ORDER BY monetary DESC;
     - Interactive tooltips showing customer details
     - Filter by segment for focused analysis
 - **Table Configuration**:
-    - Group by `rfm_segment`
+    - Group by `customer_segment`
     - Show aggregate metrics: COUNT, AVG(monetary), AVG(recency)
 - **Dashboard Tip**: Combine with Pie Chart showing segment distribution
 
