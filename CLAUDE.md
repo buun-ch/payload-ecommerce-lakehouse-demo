@@ -296,6 +296,83 @@ just payload::op-seed       # Internally runs: op run --env-file=.env.local -- n
 - **WARNING**: Seeding is destructive and drops existing data
 - Creates demo customer: `customer@example.com` / `password`
 
+### Querying Data with Trino MCP
+
+Use **mcp-trino** to execute SQL queries directly against the Trino query engine from Claude. This is useful for:
+
+- Data verification and validation
+- Ad-hoc analysis and exploration
+- Troubleshooting data pipeline issues
+- Quick schema inspection without opening BI tools
+
+**Available Operations:**
+
+- `list_catalogs`: Show all available Trino catalogs
+- `list_schemas`: List schemas within a catalog
+- `list_tables`: Show tables in a schema
+- `get_table_schema`: Inspect table structure and column types
+- `execute_query`: Run SELECT queries to retrieve data
+- `explain_query`: Analyze query execution plans for optimization
+
+**Available Data:**
+
+- **Catalog**: `iceberg` (Iceberg REST Catalog via Lakekeeper)
+- **Schemas**:
+  - `ecommerce_marts`: dbt-transformed star schema (fact/dim tables)
+  - `ecommerce_staging`: Intermediate staging tables from dbt
+  - `ecommerce`: Raw data ingested by dlt from Payload CMS
+
+**Example Usage:**
+
+```sql
+-- List all schemas
+list_schemas(catalog: "iceberg")
+
+-- Check table structure
+get_table_schema(table: "fact_orders", schema: "ecommerce_marts", catalog: "iceberg")
+
+-- Query data
+execute_query(query: "SELECT order_date, SUM(amount_usd) as revenue
+                      FROM iceberg.ecommerce_marts.fact_orders
+                      WHERE status = 'completed'
+                      GROUP BY 1
+                      ORDER BY 1 DESC
+                      LIMIT 10")
+```
+
+**When to Use:**
+
+- Use **mcp-trino** for data exploration and validation
+- Use **Metabase/Superset** (via Playwright MCP) for creating reusable dashboards and sharing with non-technical users
+
+### Working with BI Tools (Playwright MCP)
+
+This project uses Metabase and Superset as external BI tools for analytics. When interacting with these tools, use **Playwright MCP** for browser automation.
+
+**Why Playwright MCP:**
+
+- Full support for React/SPA applications (Metabase and Superset use React)
+- JavaScript execution capability via `browser_evaluate` tool
+- Automatic browser launching (no manual connection required)
+- Reliable UI interactions: tabs, dropdowns, buttons, and forms all work correctly
+
+**Key Features:**
+
+- **Interactive UI Operations**: Click buttons, fill forms, select dropdowns
+- **Page Navigation**: Direct URL navigation and link clicking both supported
+- **Screenshots**: Take screenshots for debugging or documentation
+- **Console Logs**: Access browser console for debugging React applications
+
+**Data Sources:**
+
+Both Metabase and Superset connect to the Trino query engine, which provides access to:
+
+- Iceberg tables transformed by dbt
+- Star schema with fact and dimension tables
+- Raw data ingested by dlt
+
+For detailed guidance on creating Questions in Metabase and working with the visual query builder, see [`docs/metabase.md`](./docs/metabase.md).
+
 ## Important Notes
 
 - **TypeScript**: Payload generates types in `src/payload-types.ts` - regenerate after schema changes
