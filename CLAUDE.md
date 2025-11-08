@@ -318,9 +318,9 @@ Use **mcp-trino** to execute SQL queries directly against the Trino query engine
 
 - **Catalog**: `iceberg` (Iceberg REST Catalog via Lakekeeper)
 - **Schemas**:
-  - `ecommerce_marts`: dbt-transformed star schema (fact/dim tables)
-  - `ecommerce_staging`: Intermediate staging tables from dbt
-  - `ecommerce`: Raw data ingested by dlt from Payload CMS
+    - `ecommerce_marts`: dbt-transformed star schema (fact/dim tables)
+    - `ecommerce_staging`: Intermediate staging tables from dbt
+    - `ecommerce`: Raw data ingested by dlt from Payload CMS
 
 **Example Usage:**
 

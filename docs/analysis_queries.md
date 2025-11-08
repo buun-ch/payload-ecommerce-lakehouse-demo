@@ -41,16 +41,33 @@ ORDER BY d.date_day DESC;
 **Superset Visualization**:
 
 - **Chart Type**: Mixed Chart (Recommended for dual metrics)
-- **Configuration**:
-    - X Axis: `date_day` (sorted ascending)
-    - Metrics:
-        - `total_revenue_usd`: Chart Type **Area**, Y Axis **Left**
-        - `total_orders`: Chart Type **Line**, Y Axis **Right**
-- **Customization**:
-    - Left Y Axis Format: `$,.0f` (currency for revenue)
-    - Right Y Axis Format: `,.0f` (number for orders)
-    - Enable area fill for revenue to emphasize volume
-    - Add markers to orders line for clarity
+- **Configuration** (Data tab):
+    - **Shared Query Fields**:
+        - **X-axis**: `date_day`
+        - **Time Grain**: Day (optional, if using time-based grouping)
+    - **Query A** (Revenue):
+        - **Metrics**: `SUM(total_revenue_usd)` (click "Drop columns/metrics here or click", select Simple tab, choose column and aggregate)
+        - **Series**: Line
+        - **Area chart**: ✓ (checked - enables area fill for emphasis)
+        - **Y Axis**: Primary (Left)
+    - **Query B** (Orders):
+        - **Metrics**: `SUM(total_orders)`
+        - **Series**: Line
+        - **Marker**: ✓ (checked - adds data point markers)
+        - **Y Axis**: Secondary (Right)
+- **Customization** (Customize tab):
+    - **Chart Title**:
+        - **X Axis**:
+            - **Axis Title**: "Date" or leave empty
+            - **Axis Title Margin**: 30 (default)
+        - **Y Axis (Left)**:
+            - **Axis Title**: "Revenue (USD)" or "Total Revenue"
+            - **Format**: `$,.0f` (currency for revenue)
+        - **Y Axis (Right)**:
+            - **Axis Title**: "Number of Orders"
+            - **Format**: `,.0f` (number for orders)
+    - **Legend**: Enable, position: Top or Right
+    - **Tooltip**: Show all metrics
 - **Why Mixed Chart**: Revenue and orders have different scales - dual axis prevents small values from being crushed at bottom
 
 ### 1.2 Monthly Revenue Summary
@@ -73,16 +90,31 @@ ORDER BY year_month DESC;
 **Superset Visualization**:
 
 - **Chart Type**: Mixed Chart (Recommended for dual metrics)
-- **Mixed Chart Configuration**:
-    - X Axis: `year_month`
-    - Metrics:
-        - `total_revenue_usd`: Chart Type **Bar**, Y Axis **Left**
-        - `total_orders`: Chart Type **Line**, Y Axis **Right**
-    - Sort: By `year_month` descending to show recent months first
-- **Customization**:
-    - Left Y Axis Format: `$,.0f` (currency)
-    - Right Y Axis Format: `,.0f` (number)
-    - Line markers: Enable for orders to show monthly points
+- **Configuration** (Data tab):
+    - **Shared Query Fields**:
+        - **X-axis**: `year_month`
+        - **Time Grain**: (not needed, already aggregated by month in SQL)
+    - **Query A** (Revenue):
+        - **Metrics**: `SUM(total_revenue_usd)`
+        - **Series**: Bar
+        - **Y Axis**: Primary (Left)
+    - **Query B** (Orders):
+        - **Metrics**: `SUM(total_orders)`
+        - **Series**: Line
+        - **Marker**: ✓ (checked - show monthly data points)
+        - **Y Axis**: Secondary (Right)
+- **Customization** (Customize tab):
+    - **Chart Title**:
+        - **X Axis**:
+            - **Axis Title**: "Month" or leave empty
+        - **Y Axis (Left)**:
+            - **Axis Title**: "Revenue (USD)" or "Total Revenue"
+            - **Format**: `$,.0f` (currency)
+        - **Y Axis (Right)**:
+            - **Axis Title**: "Number of Orders"
+            - **Format**: `,.0f` (number)
+    - **Sort**: By `year_month` descending to show recent months first
+    - **Legend**: Enable
 - **Alternative - Table Configuration**:
     - Columns: All metrics for detailed analysis
     - Enable sorting and filtering for interactive exploration
@@ -150,13 +182,29 @@ LIMIT 10;
 **Superset Visualization**:
 
 - **Chart Type**: Bar Chart (Horizontal)
-- **Configuration**:
-    - X Axis: `total_revenue_usd`
-    - Y Axis: `product_name` (sorted by revenue descending)
-- **Customization**:
-    - Show value labels on bars
-    - Truncate long product names with tooltips
-    - Add `categories` as tooltip
+- **Configuration** (Data tab):
+    - **Y-axis**: `product_name`
+        - Click "Drop columns here or click" under Y-axis
+        - Select `product_name`
+    - **Y-Axis Sort By**: `SUM(total_revenue_usd)` (sorts bars by revenue)
+    - **Y-Axis Sort Ascending**: ✓ (checked - note: in horizontal orientation, this places highest values at top)
+    - **Metrics**: `SUM(total_revenue_usd)`
+        - Click "Drop columns/metrics here or click"
+        - Select Simple tab, column `total_revenue_usd`, aggregate `SUM`
+    - **Dimensions**: (leave empty)
+    - **Row limit**: 1000 (or adjust as needed)
+- **Customization** (Customize tab):
+    - **Chart Orientation**: Horizontal (select "Horizontal" button)
+    - **Chart Title**:
+        - X Axis > Axis Title: "Total Revenue" (or custom label)
+    - **Chart Options**:
+        - **Show Value**: ✓ (checked - displays value labels on bars)
+        - **Color Scheme**: Superset Colors (or preferred scheme)
+        - **Show legend**: ✓ (checked)
+        - **Truncate X Axis**: ✓ (checked - helps with long product names)
+    - **Tooltip**:
+        - **Rich tooltip**: ✓ (checked - shows detailed information on hover)
+        - If dataset includes `categories` column, it will automatically appear in tooltip
 - **Alternative**: Use Table with sparklines showing quantity trend over time
 
 ### 2.2 Category Performance
@@ -264,17 +312,31 @@ ORDER BY total_ltv_usd DESC;
 **Superset Visualization**:
 
 - **Chart Type**: Mixed Chart (Recommended for dual metrics)
-- **Configuration**:
-    - X Axis: `customer_segment`
-    - Metrics:
-        - `total_ltv_usd`: Chart Type **Bar**, Y Axis **Left**
-        - `customer_count`: Chart Type **Line**, Y Axis **Right**
-    - Sort by `total_ltv_usd` descending
-- **Customization**:
-    - Left Y Axis Format: `$,.0f` (currency)
-    - Right Y Axis Format: `,.0f` (number)
-    - Show `avg_ltv_usd` as data labels on bars
-    - Line markers: Enable for customer_count
+- **Configuration** (Data tab):
+    - **Shared Query Fields**:
+        - **X-axis**: `customer_segment`
+    - **Query A** (LTV):
+        - **Metrics**: `SUM(total_ltv_usd)`
+        - **Series**: Bar
+        - **Y Axis**: Primary (Left)
+    - **Query B** (Customer Count):
+        - **Metrics**: `SUM(customer_count)`
+        - **Series**: Line
+        - **Marker**: ✓ (checked)
+        - **Y Axis**: Secondary (Right)
+- **Customization** (Customize tab):
+    - **Chart Title**:
+        - **X Axis**:
+            - **Axis Title**: "Customer Segment" or leave empty
+        - **Y Axis (Left)**:
+            - **Axis Title**: "Lifetime Value (USD)" or "Total LTV"
+            - **Format**: `$,.0f` (currency)
+        - **Y Axis (Right)**:
+            - **Axis Title**: "Number of Customers"
+            - **Format**: `,.0f` (number)
+    - **Sort**: By `total_ltv_usd` descending
+    - **Data labels**: Show `avg_ltv_usd` on bars (if supported)
+    - **Legend**: Enable
 - **Why Mixed Chart**: LTV values ($thousands) and customer counts have different scales
 - **Dashboard Tip**: Combine with Pie Chart showing customer_count distribution by segment
 
@@ -322,17 +384,31 @@ ORDER BY acquisition_month DESC;
 **Superset Visualization**:
 
 - **Chart Type**: Mixed Chart (Recommended for dual metrics)
-- **Configuration**:
-    - X Axis: `acquisition_month`
-    - Metrics:
-        - `new_customers`: Chart Type **Area** or **Bar**, Y Axis **Left**
-        - `avg_customer_ltv_usd`: Chart Type **Line**, Y Axis **Right**
-- **Customization**:
-    - Left Y Axis Format: `,.0f` (number of customers)
-    - Right Y Axis Format: `$,.0f` (currency for LTV)
-    - Area fill: Enable for new_customers to show volume
-    - Line markers: Enable for avg_ltv to show monthly values
-    - Mark milestones or marketing campaigns as annotations
+- **Configuration** (Data tab):
+    - **Shared Query Fields**:
+        - **X-axis**: `acquisition_month`
+    - **Query A** (New Customers):
+        - **Metrics**: `SUM(new_customers)`
+        - **Series**: Line (or Bar)
+        - **Area chart**: ✓ (optional - checked to show volume with fill)
+        - **Y Axis**: Primary (Left)
+    - **Query B** (Avg LTV):
+        - **Metrics**: `AVG(avg_customer_ltv_usd)`
+        - **Series**: Line
+        - **Marker**: ✓ (checked - show monthly data points)
+        - **Y Axis**: Secondary (Right)
+- **Customization** (Customize tab):
+    - **Chart Title**:
+        - **X Axis**:
+            - **Axis Title**: "Acquisition Month" or "Month"
+        - **Y Axis (Left)**:
+            - **Axis Title**: "New Customers" or "Customer Count"
+            - **Format**: `,.0f` (number of customers)
+        - **Y Axis (Right)**:
+            - **Axis Title**: "Average Customer LTV (USD)"
+            - **Format**: `$,.0f` (currency for LTV)
+    - **Annotations**: Mark milestones or marketing campaigns
+    - **Legend**: Enable
 - **Why Mixed Chart**: Customer count and average LTV have different scales and units
 - **Alternative**: Use Area Chart alone for `new_customers` if focusing on acquisition trend only
 
@@ -354,13 +430,34 @@ ORDER BY transaction_count DESC;
 **Superset Visualization**:
 
 - **Chart Type**: Pie Chart or Donut Chart
-- **Configuration**:
-    - Dimension: `status`
-    - Metric: `transaction_count` (or `total_amount_usd` for revenue view)
-    - Show percentage as calculated field
-- **Customization**:
-    - Display both count and percentage
-    - Show total in center (for Donut Chart)
+- **Configuration** (Data tab):
+    - **Dimensions**: `status`
+        - Click "Drop columns here or click"
+        - Select `status`
+    - **Metric**: `SUM(transaction_count)` (or `SUM(total_amount_usd)` for revenue view)
+        - Click the metric area
+        - Select Simple tab, column `transaction_count`, aggregate `SUM`
+    - **Row limit**: 100
+    - **Sort by metric**: ✓ (checked - sorts slices by size)
+- **Customization** (Customize tab):
+    - **Chart Options**:
+        - **Color Scheme**: ECharts v5.x Colors (or preferred scheme)
+        - **Percentage threshold**: 5 (hides slices smaller than 5%)
+    - **Legend**:
+        - **Show legend**: ✓ (checked)
+        - **Orientation**: Top (or Right)
+    - **Labels**:
+        - **Label Type**: Select from:
+            - `Category Name` (category name only)
+            - `Category Name and Percentage` (recommended: shows name and percentage)
+            - `Category Name, Percentage and Value` (most detailed: shows all information)
+        - **Show Labels**: ✓ (checked)
+        - **Put labels outside**: ✓ (checked - places labels outside the pie)
+        - **Label Line**: ✓ (checked - draws lines from slices to labels)
+        - **Show Total**: ✓ (checked - displays total in center)
+    - **Pie shape** (for Donut Chart):
+        - **Donut**: ✓ (checked - creates donut chart with hole in center)
+        - Adjust **Inner Radius** slider to control hole size
 - **Dashboard Tip**: Add Big Number card showing success rate % as KPI
 - **Alert**: Set threshold alert if success rate drops below 95%
 
@@ -442,7 +539,7 @@ ORDER BY cohort_month DESC, months_since_first ASC;
 
 **Superset Visualization**:
 
-- **Chart Type**: Heatmap (Recommended)
+- **Chart Type**: Heatmap
 - **Configuration**:
     - X Axis: `months_since_first` (0, 1, 2, 3...)
     - Y Axis: `cohort_month` (cohort grouping)
@@ -450,7 +547,116 @@ ORDER BY cohort_month DESC, months_since_first ASC;
 - **Customization**:
     - Show percentage values in cells
     - Sort cohorts by date descending (recent at top)
-- **Alternative**: Pivot Table with conditional cell formatting for detailed numbers
+    - Color gradient: Use sequential color scheme (light to dark) for better readability
+- **Use Case**: Compare many cohorts at once, get overall retention pattern at a glance across all cohorts
+- **Dashboard Tip**: Place at top of dashboard for macro view, combine with line chart (Query 5.1.1) below for detailed trend analysis
+
+### 5.1.1 Cohort Analysis - Recent N Cohorts (Retention Curve)
+
+This query focuses on the most recent cohorts (configurable via `LIMIT N`) for detailed retention curve visualization. Use this for Line Chart to avoid cluttered visualization with too many cohort lines.
+
+```sql
+WITH first_purchase AS (
+    SELECT
+        customer_id,
+        MIN(CAST(order_date AS DATE)) AS first_order_date
+    FROM ecommerce_marts.fact_orders
+    GROUP BY customer_id
+),
+cohort_orders AS (
+    SELECT
+        fp.first_order_date,
+        DATE_FORMAT(fp.first_order_date, '%Y-%m') AS cohort_month,
+        o.customer_id,
+        CAST(o.order_date AS DATE) AS order_date,
+        DATE_DIFF('month', fp.first_order_date, CAST(o.order_date AS DATE)) AS months_since_first
+    FROM first_purchase fp
+    JOIN ecommerce_marts.fact_orders o
+        ON fp.customer_id = o.customer_id
+),
+cohort_data AS (
+    SELECT
+        cohort_month,
+        months_since_first,
+        COUNT(DISTINCT customer_id) AS active_customers
+    FROM cohort_orders
+    GROUP BY cohort_month, months_since_first
+),
+recent_cohorts AS (
+    SELECT DISTINCT cohort_month
+    FROM cohort_data
+    ORDER BY cohort_month DESC
+    LIMIT 3  -- Change this number to get more/fewer cohorts (recommended: 3-6)
+)
+SELECT
+    cohort_month,
+    months_since_first,
+    active_customers,
+    FIRST_VALUE(active_customers) OVER (
+        PARTITION BY cohort_month
+        ORDER BY months_since_first
+    ) AS cohort_size,
+    ROUND(
+        active_customers * 100.0 /
+        NULLIF(FIRST_VALUE(active_customers) OVER (
+            PARTITION BY cohort_month
+            ORDER BY months_since_first
+        ), 0),
+        2
+    ) AS retention_rate
+FROM cohort_data
+WHERE cohort_month IN (SELECT cohort_month FROM recent_cohorts)
+ORDER BY cohort_month DESC, months_since_first ASC;
+```
+
+**Superset Visualization**:
+
+- **Chart Type**: Line Chart
+- **Configuration** (Data tab):
+    - **X-axis**: `months_since_first` (0, 1, 2, 3...)
+    - **Metrics**: `MAX(retention_rate)` or `AVG(retention_rate)`
+        - Click "Drop columns/metrics here or click"
+        - Select "Simple" tab
+        - Column: `retention_rate`
+        - Aggregate: `MAX` (or `AVG` - both work since retention_rate is pre-calculated)
+    - **Dimensions**: `cohort_month` (creates separate line per cohort)
+        - Click "Drop columns here or click"
+        - Select `cohort_month`
+    - **Contribution Mode**: None
+- **Customization** (Customize tab):
+    - **Y Axis**:
+        - **Number format**: `,.1%` or `,.2%` (percentage display)
+        - **Y Axis Bounds**: Min: 0, Max: 100 (fixed range for easier comparison across cohorts)
+    - **Chart Options**:
+        - **Show markers**: ✓ (checked - emphasize data points)
+        - **Marker size**: Larger value for better visibility
+        - **Line style**: Smooth or Linear (based on preference)
+    - **Legend**:
+        - **Show legend**: ✓ (checked - identify cohorts by color)
+        - **Orientation**: Right or Top
+- **Query Customization**:
+    - Adjust `LIMIT 3` to `LIMIT 6` for more cohorts (recommended: 3-6 for readability)
+    - For specific cohorts instead of recent N, replace the `recent_cohorts` CTE with:
+
+        ```sql
+        recent_cohorts AS (
+            SELECT cohort_month FROM (VALUES
+                ('2024-01'), ('2024-02'), ('2024-03')
+            ) AS t(cohort_month)
+        )
+        ```
+
+- **Use Case**:
+    - Visualize retention curve shape and decay pattern
+    - Compare retention performance across recent cohorts
+    - Identify when customers typically churn (which month)
+    - Measure impact of retention initiatives (compare before/after cohorts)
+- **What to Look For**:
+    - **Flat curve**: Strong retention, customers stay active over time (excellent)
+    - **Steep initial drop then flat**: Normal ecommerce pattern, some customers become loyal
+    - **Continuous steep drop**: Potential customer experience or product-market fit issues
+    - **Cohorts trending upward**: Recent cohorts retaining better than older ones (positive signal)
+- **Dashboard Tip**: Place below heatmap (Query 5.1) for drill-down analysis of recent cohort performance
 
 ### 5.2 RFM Analysis (Recency, Frequency, Monetary)
 
