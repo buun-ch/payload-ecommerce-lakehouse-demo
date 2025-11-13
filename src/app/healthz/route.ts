@@ -1,35 +1,14 @@
 import { NextResponse } from 'next/server'
-import { getPayload } from 'payload'
-import configPromise from '@payload-config'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
   try {
-    // Basic health check
+    // Basic health check without database connection check
     const health = {
       status: 'ok',
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
-    }
-
-    // Optional: Check database connection
-    if (process.env.DATABASE_URI) {
-      try {
-        const payload = await getPayload({ config: configPromise })
-        // Simple query to verify database connectivity
-        await payload.find({
-          collection: 'users',
-          limit: 0,
-          pagination: false,
-        })
-        health.database = 'connected'
-      } catch (dbError) {
-        // Database check failed, but don't fail the health check
-        // This allows the pod to stay alive but marked as not ready
-        health.database = 'error'
-        console.error('Database health check failed:', dbError)
-      }
     }
 
     return NextResponse.json(health, { status: 200 })

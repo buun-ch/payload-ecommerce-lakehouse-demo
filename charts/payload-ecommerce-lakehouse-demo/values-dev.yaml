@@ -8,6 +8,16 @@ telemetry:
 logging:
   health_request: false  # Enable/disable health check request logs
 
+# Startup probe to allow time for schema pulling and initialization
+startupProbe:
+  httpGet:
+    path: /healthz
+    port: http
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 30  # Allow up to 5 minutes (10s * 30) for startup
+
 env:
   - name: NODE_ENV
     value: "development"
