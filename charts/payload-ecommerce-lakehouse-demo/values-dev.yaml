@@ -18,6 +18,26 @@ startupProbe:
   timeoutSeconds: 5
   failureThreshold: 30  # Allow up to 5 minutes (10s * 30) for startup
 
+# Development-friendly liveness probe (longer timeout for JIT compilation)
+livenessProbe:
+  httpGet:
+    path: /healthz
+    port: http
+  initialDelaySeconds: 30
+  periodSeconds: 30
+  timeoutSeconds: 10
+  failureThreshold: 3
+
+# Development-friendly readiness probe
+readinessProbe:
+  httpGet:
+    path: /healthz
+    port: http
+  initialDelaySeconds: 15
+  periodSeconds: 10
+  timeoutSeconds: 10
+  failureThreshold: 3
+
 env:
   - name: NODE_ENV
     value: "development"

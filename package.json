@@ -27,6 +27,7 @@
     "test:int": "cross-env NODE_OPTIONS=--no-deprecation vitest run --config ./vitest.config.mts"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^2.0.44",
     "@payloadcms/admin-bar": "3.59.1",
     "@payloadcms/db-postgres": "3.59.1",
     "@payloadcms/email-nodemailer": "3.59.1",
@@ -46,6 +47,7 @@
     "@radix-ui/react-slot": "^1.1.2",
     "@stripe/react-stripe-js": "^3",
     "@stripe/stripe-js": "^4.0.0",
+    "ai": "^5.0.93",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",
     "cross-env": "^7.0.3",

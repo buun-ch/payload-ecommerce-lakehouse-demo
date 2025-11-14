@@ -155,5 +155,23 @@ envFrom: []
 # - secretRef:  # yamllint disable-line
 #     name: my-secret
 
+# Extra environment variables (key-value pairs)
+# These will be added as individual env vars
+extraEnvVars: []
+# - name: ANTHROPIC_API_KEY
+#   value: "sk-ant-..."
+# - name: LANGFUSE_BASEURL
+#   value: "https://langfuse.example.com"
+
+# Name of existing Secret containing extra environment variables
+# All keys from the secret will be exposed as environment variables
+extraEnvVarsSecret: ""
+# extraEnvVarsSecret: "payload-ai-secrets"
+
+# Name of existing ConfigMap containing extra environment variables
+# All keys from the ConfigMap will be exposed as environment variables
+extraEnvVarsCM: ""
+# extraEnvVarsCM: "payload-ai-config"
+
 # Init containers to run before the main container
 initContainers: []

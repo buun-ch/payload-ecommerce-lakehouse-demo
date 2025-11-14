@@ -60,9 +60,20 @@ spec:
             - name: DISABLE_HEALTH_REQUEST_LOGS
               value: "1"
           {{- end }}
-          {{- with .Values.envFrom }}
-          envFrom:
+          {{- with .Values.extraEnvVars }}
             {{- toYaml . | nindent 12 }}
+          {{- end }}
+          envFrom:
+          {{- with .Values.envFrom }}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- if .Values.extraEnvVarsSecret }}
+            - secretRef:
+                name: {{ .Values.extraEnvVarsSecret }}
+          {{- end }}
+          {{- if .Values.extraEnvVarsCM }}
+            - configMapRef:
+                name: {{ .Values.extraEnvVarsCM }}
           {{- end }}
           {{- with .Values.startupProbe }}
           startupProbe:

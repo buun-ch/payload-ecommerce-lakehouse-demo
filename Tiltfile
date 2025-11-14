@@ -1,5 +1,16 @@
 # -*- mode: Python -*-
 # https://docs.tilt.dev/
+#
+# Tilt configuration for Payload Ecommerce Lakehouse Demo
+#
+# Usage:
+#   tilt up                                    # Basic development
+#   tilt up -- --port-forward                  # Enable port forwarding (localhost:13000)
+#   tilt up -- --ai-external-secret            # Enable AI External Secret (Vault integration)
+#   tilt up -- --enable-health-logs            # Enable health check request logs
+#   tilt up -- --extra-values-file=custom.yaml # Use additional Helm values file
+#
+# For AI External Secret setup, see: docs/ai-external-secret.md
 
 allow_k8s_contexts(k8s_context())
 
@@ -7,6 +18,7 @@ config.define_string('registry')
 config.define_bool('port-forward')
 config.define_string('extra-values-file')
 config.define_bool('enable-health-logs')
+config.define_bool('ai-external-secret')
 
 cfg = config.parse()
 
@@ -35,6 +47,15 @@ if enable_health_logs:
     helm_set_values.append('logging.health_request=true')
     print("📵 Health check request logs enabled")
 
+# AI External Secret support
+use_ai_external_secret = cfg.get('ai-external-secret', False)
+if use_ai_external_secret:
+    # Deploy ExternalSecret manifest
+    k8s_yaml('./manifests/ai-env-external-secret.yaml')
+    # Configure Helm to use the generated secret
+    helm_set_values.append('extraEnvVarsSecret=ai-env-secret')
+    print("🤖 AI External Secret enabled (ai-env-secret)")
+
 helm_release = helm(
     './charts/payload-ecommerce-lakehouse-demo',
     name='payload-ecommerce-lakehouse-demo',
@@ -48,5 +69,6 @@ k8s_resource(
     'payload-ecommerce-lakehouse-demo',
     port_forwards='13000:3000' if enable_port_forwards else [],
 )
+
 if enable_port_forwards:
     print("🚀 Access your application at: http://localhost:13000")
