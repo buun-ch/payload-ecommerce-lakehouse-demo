@@ -1,3 +1,6 @@
+// Import Tailwind CSS
+// @import 'tailwindcss';
+
 // Import assistant-ui pre-compiled CSS (for non-Tailwind environments)
 @import '@assistant-ui/styles/index.css';
 @import '@assistant-ui/styles/markdown.css';
@@ -447,6 +450,14 @@ button[aria-label='Open AI assistant'] {
   }
 }
 
+// Composer Cancel Button (Stop generating)
+.aui-composer-cancel {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0.25rem !important;
+}
+
 // Attachments
 .aui-composer-attachments {
   margin-bottom: 8px;
@@ -534,4 +545,87 @@ button[aria-label='Open AI assistant'] {
   width: 20px;
   height: 20px;
   stroke-width: 1.5px;
+}
+
+// Tooltip Icon Button
+.aui-button-icon {
+  width: 1.5rem !important;
+  height: 1.5rem !important;
+  padding: 0.25rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.aui-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+// Tool Fallback
+.aui-tool-fallback-root {
+  margin-bottom: 1rem;
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--theme-elevation-200);
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+}
+
+.aui-tool-fallback-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+.aui-tool-fallback-icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.aui-tool-fallback-title {
+  flex-grow: 1;
+}
+
+.aui-tool-fallback-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  border-top: 1px solid var(--theme-elevation-200);
+  padding-top: 0.5rem;
+}
+
+.aui-tool-fallback-args-root {
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+.aui-tool-fallback-args-value {
+  white-space: pre-wrap;
+}
+
+.aui-tool-fallback-result-root {
+  border-top: 1px dashed var(--theme-elevation-200);
+  padding-left: 1rem;
+  padding-right: 1rem;
+  padding-top: 0.5rem;
+}
+
+.aui-tool-fallback-result-header {
+  font-weight: 600;
+}
+
+.aui-tool-fallback-result-content {
+  white-space: pre-wrap;
 }

@@ -4,7 +4,7 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
-import { MessageSquare, X, ChevronRight } from "lucide-react";
+import { MessageSquare, X } from "lucide-react";
 import { type FC, type PropsWithChildren, useRef, useState } from "react";
 import { type ImperativePanelHandle } from "react-resizable-panels";
 
