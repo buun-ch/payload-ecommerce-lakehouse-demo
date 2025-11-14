@@ -1,3 +1,7 @@
+// Import assistant-ui pre-compiled CSS (for non-Tailwind environments)
+@import '@assistant-ui/styles/index.css';
+@import '@assistant-ui/styles/markdown.css';
+
 .visually-hidden {
   position: absolute;
   width: 1px;
@@ -7,4 +11,527 @@
   overflow: hidden;
   clip: rect(0, 0, 0, 0);
   border: 0;
+}
+
+// AI Assistant Panel Structure
+.ai-assistant-sidebar {
+  height: 100vh;
+}
+
+#ai-assistant {
+  background-color: var(--theme-bg);
+}
+
+.ai-assistant-panel-content {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+}
+
+// AI Assistant Header
+.ai-assistant-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--theme-elevation-100);
+  padding: 12px;
+  flex-shrink: 0;
+
+  h2 {
+    font-size: 14px;
+    font-weight: 600;
+  }
+}
+
+.ai-assistant-header-buttons {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ai-assistant-header-button {
+  border-radius: 6px;
+  padding: 4px;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  color: var(--theme-text);
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: var(--theme-elevation-100);
+  }
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+// AI Assistant custom styles
+.ai-assistant-separator {
+  width: 1px;
+  background-color: var(--theme-elevation-100);
+  flex-shrink: 0;
+  height: 100vh;
+}
+
+// Thread wrapper to ensure proper sizing
+.ai-assistant-thread-wrapper {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+// Ensure Thread component takes full height and composer stays at bottom
+.aui-thread-root {
+  container-type: inline-size;
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  background-color: var(--theme-bg);
+}
+
+.aui-thread-viewport {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  overflow-x: auto;
+  overflow-y: scroll;
+  padding: 0 16px;
+}
+
+.aui-thread-viewport-spacer {
+  min-height: 32px;
+  flex-grow: 1;
+}
+
+// Scroll to bottom button
+.aui-thread-scroll-to-bottom {
+  position: absolute;
+  top: -48px;
+  z-index: 10;
+  align-self: center;
+  border-radius: 9999px;
+  padding: 16px;
+
+  &:disabled {
+    visibility: hidden;
+  }
+}
+
+// Welcome screen
+.aui-thread-welcome-root {
+  margin: auto;
+  display: flex;
+  width: 100%;
+  max-width: var(--thread-max-width);
+  flex-grow: 1;
+  flex-direction: column;
+}
+
+.aui-thread-welcome-center {
+  display: flex;
+  width: 100%;
+  flex-grow: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.aui-thread-welcome-message {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 32px;
+}
+
+.aui-thread-welcome-message-motion-1 {
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.aui-thread-welcome-message-motion-2 {
+  font-size: 24px;
+  color: var(--theme-text-muted);
+  opacity: 0.65;
+}
+
+// Thread suggestions - match composer padding (16px)
+.aui-thread-welcome-suggestions {
+  display: grid;
+  width: 100%;
+  gap: 8px;
+  padding: 0;
+
+  @container (min-width: 768px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.aui-thread-welcome-suggestion-display {
+  &:nth-child(n + 3) {
+    display: none;
+
+    @container (min-width: 768px) {
+      display: block;
+    }
+  }
+}
+
+.aui-thread-welcome-suggestion {
+  height: auto;
+  width: 100%;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 4px;
+  border-radius: 24px;
+  border: 1px solid var(--theme-elevation-100);
+  padding: 16px 20px;
+  text-align: left;
+  font-size: 14px;
+
+  @container (min-width: 768px) {
+    flex-direction: column;
+  }
+
+  &:hover {
+    background-color: var(--theme-elevation-50);
+  }
+}
+
+.aui-thread-welcome-suggestion-text-1 {
+  font-weight: 500;
+}
+
+.aui-thread-welcome-suggestion-text-2 {
+  color: var(--theme-text-muted);
+}
+
+// Composer container fixed at bottom
+.aui-composer-container {
+  flex-shrink: 0;
+  background-color: var(--theme-bg);
+}
+
+// Composer wrapper - match suggestions padding (16px)
+.aui-composer-wrapper {
+  margin: 0 auto;
+  display: flex;
+  width: 100%;
+  max-width: var(--thread-max-width);
+  flex-direction: column;
+  gap: 16px;
+  overflow: visible;
+  padding: 16px; // Match suggestions padding
+}
+
+.aui-composer-root {
+  position: relative;
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  border-radius: 24px;
+  border: 1px solid var(--theme-elevation-200);
+  background-color: var(--theme-bg);
+  padding: 8px 4px 0;
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  outline: none;
+  transition:
+    color 0.2s,
+    box-shadow 0.2s;
+
+  &:has(textarea:focus-visible) {
+    border-color: var(--theme-elevation-400);
+    box-shadow: 0 0 0 3px var(--theme-elevation-100);
+  }
+}
+
+.aui-composer-input {
+  margin-bottom: 4px;
+  max-height: 128px;
+  min-height: 64px;
+  width: 100%;
+  resize: none;
+  background-color: transparent;
+  padding: 6px 14px 12px;
+  font-size: 16px;
+  outline: none;
+
+  &::placeholder {
+    color: var(--theme-text-muted);
+  }
+
+  &:focus-visible {
+    box-shadow: none;
+  }
+}
+
+.aui-composer-action-wrapper {
+  position: relative;
+  margin: 0 4px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+button[aria-label='Open AI assistant'] {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  z-index: 50;
+  border-radius: 9999px;
+  background-color: hsl(222.2 47.4% 11.2%);
+  padding: 12px;
+  color: hsl(210 40% 98%);
+  box-shadow:
+    0 10px 15px -3px rgb(0 0 0 / 0.1),
+    0 4px 6px -4px rgb(0 0 0 / 0.1);
+  cursor: pointer;
+  border: none;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: hsl(222.2 47.4% 15%);
+  }
+}
+
+// UI Component Styles (for Payload admin)
+// Avatar
+.ui-avatar-root {
+  position: relative;
+  display: flex;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: 9999px;
+}
+
+.ui-avatar-image {
+  aspect-ratio: 1;
+  width: 100%;
+  height: 100%;
+}
+
+.ui-avatar-fallback {
+  background-color: var(--theme-elevation-100);
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+}
+
+// Resizable
+.ui-resizable-panel-group {
+  display: flex;
+  height: 100%;
+  width: 100%;
+
+  &[data-panel-group-direction='vertical'] {
+    flex-direction: column;
+  }
+}
+
+.ui-resizable-handle {
+  background-color: var(--theme-elevation-100);
+  position: relative;
+  display: flex;
+  width: 1px;
+  align-items: center;
+  justify-content: center;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset-top: 0;
+    inset-bottom: 0;
+    left: 50%;
+    width: 4px;
+    transform: translateX(-50%);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 1px var(--theme-elevation-400);
+  }
+
+  &[data-panel-group-direction='vertical'] {
+    height: 1px;
+    width: 100%;
+
+    &::after {
+      left: 0;
+      height: 4px;
+      width: 100%;
+      transform: translateY(-50%);
+    }
+
+    .ui-resizable-handle-grip {
+      transform: rotate(90deg);
+    }
+  }
+}
+
+.ui-resizable-handle-grip {
+  background-color: var(--theme-elevation-100);
+  z-index: 10;
+  display: flex;
+  height: 16px;
+  width: 12px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 2px;
+  border: 1px solid var(--theme-elevation-200);
+}
+
+.ui-resizable-handle-icon {
+  width: 10px;
+  height: 10px;
+}
+
+// Tooltip
+.ui-tooltip-content {
+  background-color: var(--theme-text);
+  color: var(--theme-bg);
+  z-index: 50;
+  width: fit-content;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 12px;
+  text-wrap: balance;
+  animation: tooltip-in 150ms cubic-bezier(0.16, 1, 0.3, 1);
+
+  &[data-state='closed'] {
+    animation: tooltip-out 100ms ease-in;
+  }
+}
+
+.ui-tooltip-arrow {
+  fill: var(--theme-text);
+  z-index: 50;
+  width: 10px;
+  height: 10px;
+  transform: translateY(calc(-50% - 2px)) rotate(45deg);
+  border-radius: 2px;
+}
+
+@keyframes tooltip-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes tooltip-out {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
+
+// Attachments
+.aui-composer-attachments {
+  margin-bottom: 8px;
+  display: flex;
+  width: 100%;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 2px 6px 4px;
+
+  &:empty {
+    display: none;
+  }
+}
+
+.aui-user-message-attachments-end {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  display: flex;
+  width: 100%;
+  flex-direction: row;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.aui-attachment-tile-remove {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  background-color: white;
+  color: var(--theme-text-muted);
+  opacity: 1;
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    background-color: white !important;
+  }
+
+  svg {
+    width: 12px;
+    height: 12px;
+    color: black;
+  }
+
+  &:hover svg {
+    color: var(--theme-error);
+  }
+}
+
+.aui-composer-add-attachment {
+  width: 34px;
+  height: 34px;
+  border-radius: 9999px;
+  padding: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    background-color: rgba(var(--theme-text-rgb, 0, 0, 0), 0.15);
+  }
+
+  svg {
+    width: 20px;
+    height: 20px;
+    stroke-width: 1.5px;
+  }
+}
+
+.aui-attachment-remove-icon {
+  width: 12px;
+  height: 12px;
+}
+
+.aui-attachment-add-icon {
+  width: 20px;
+  height: 20px;
+  stroke-width: 1.5px;
 }

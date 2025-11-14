@@ -49,6 +49,10 @@ env:
     value: "http://payload-ecommerce-lakehouse-demo.default:3000"
   - name: NEXT_PUBLIC_SERVER_URL
     value: "http://payload-ecommerce-lakehouse-demo.default:3000"
+  - name: CHOKIDAR_USEPOLLING
+    value: "true"
+  - name: WATCHPACK_POLLING
+    value: "true"
 
 ingress:
   enabled: false

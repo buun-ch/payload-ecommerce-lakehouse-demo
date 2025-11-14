@@ -6,6 +6,7 @@ export default {
     './components/**/*.{ts,tsx}',
     './app/**/*.{ts,tsx}',
     './src/**/*.{ts,tsx}',
+    './node_modules/@assistant-ui/**/*.{js,ts,jsx,tsx}',
   ],
   darkMode: ['selector', '[data-theme="dark"]'],
   safelist: [
