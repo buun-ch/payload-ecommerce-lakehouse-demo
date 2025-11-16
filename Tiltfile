@@ -54,6 +54,7 @@ if use_ai_external_secret:
     k8s_yaml('./manifests/ai-env-external-secret.yaml')
     # Configure Helm to use the generated secret
     helm_set_values.append('extraEnvVarsSecret=ai-env-secret')
+    helm_set_values.append('aiAssistant.enabled=true')
     print("🤖 AI External Secret enabled (ai-env-secret)")
 
 helm_release = helm(

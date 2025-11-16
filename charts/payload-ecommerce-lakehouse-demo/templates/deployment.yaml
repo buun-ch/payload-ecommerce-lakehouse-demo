@@ -60,6 +60,8 @@ spec:
             - name: DISABLE_HEALTH_REQUEST_LOGS
               value: "1"
           {{- end }}
+            - name: NEXT_PUBLIC_AI_ASSISTANT_ENABLED
+              value: {{ .Values.aiAssistant.enabled | quote }}
           {{- with .Values.extraEnvVars }}
             {{- toYaml . | nindent 12 }}
           {{- end }}

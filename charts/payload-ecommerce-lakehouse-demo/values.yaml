@@ -175,3 +175,6 @@ extraEnvVarsCM: ""
 
 # Init containers to run before the main container
 initContainers: []
+
+aiAssistant:
+  enabled: false

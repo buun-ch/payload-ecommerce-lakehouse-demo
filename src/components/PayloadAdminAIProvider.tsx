@@ -7,8 +7,11 @@ import type { ReactNode } from 'react';
 export function PayloadAdminAIProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
 
-  // Only show AI assistant when user is logged in
-  if (!user) {
+  // Check if AI assistant is enabled via environment variable
+  const isAIAssistantEnabled = process.env.NEXT_PUBLIC_AI_ASSISTANT_ENABLED === 'true';
+
+  // Only show AI assistant when user is logged in AND feature is enabled
+  if (!user || !isAIAssistantEnabled) {
     return <>{children}</>;
   }
 
