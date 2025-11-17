@@ -19,6 +19,7 @@ config.define_bool('port-forward')
 config.define_string('extra-values-file')
 config.define_bool('enable-health-logs')
 config.define_bool('ai-external-secret')
+config.define_bool('metabase-embedding')
 
 cfg = config.parse()
 
@@ -47,15 +48,19 @@ if enable_health_logs:
     helm_set_values.append('logging.health_request=true')
     print("📵 Health check request logs enabled")
 
-# AI External Secret support
 use_ai_external_secret = cfg.get('ai-external-secret', False)
 if use_ai_external_secret:
-    # Deploy ExternalSecret manifest
     k8s_yaml('./manifests/ai-env-external-secret.yaml')
-    # Configure Helm to use the generated secret
     helm_set_values.append('extraEnvVarsSecret=ai-env-secret')
     helm_set_values.append('aiAssistant.enabled=true')
     print("🤖 AI External Secret enabled (ai-env-secret)")
+
+metabase_embedding = cfg.get('metabase-embedding', False)
+if metabase_embedding:
+    k8s_yaml('./manifests/metabase-embedding-external-secret.yaml')
+    helm_set_values.append('metabase.embedding.enabled=true')
+    helm_set_values.append('metabase.embedding.envVarsSecret=metabase-embedding-secret')
+    print("📊 Metabase embedding enabled")
 
 helm_release = helm(
     './charts/payload-ecommerce-lakehouse-demo',

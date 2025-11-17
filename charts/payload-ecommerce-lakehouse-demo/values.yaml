@@ -178,3 +178,8 @@ initContainers: []
 
 aiAssistant:
   enabled: false
+
+metabase:
+  embedding:
+    enabled: false
+    envVarsSecret: ""

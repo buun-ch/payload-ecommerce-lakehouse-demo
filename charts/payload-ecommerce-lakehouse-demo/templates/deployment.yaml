@@ -62,6 +62,10 @@ spec:
           {{- end }}
             - name: NEXT_PUBLIC_AI_ASSISTANT_ENABLED
               value: {{ .Values.aiAssistant.enabled | quote }}
+          {{- if .Values.metabase.embedding.enabled }}
+            - name: NEXT_PUBLIC_METABASE_EMBEDDING_ENABLED
+              value: "true"
+          {{- end }}
           {{- with .Values.extraEnvVars }}
             {{- toYaml . | nindent 12 }}
           {{- end }}
@@ -72,6 +76,10 @@ spec:
           {{- if .Values.extraEnvVarsSecret }}
             - secretRef:
                 name: {{ .Values.extraEnvVarsSecret }}
+          {{- end }}
+          {{- if .Values.metabase.embedding.envVarsSecret }}
+            - secretRef:
+                name: {{ .Values.metabase.embedding.envVarsSecret }}
           {{- end }}
           {{- if .Values.extraEnvVarsCM }}
             - configMapRef:
