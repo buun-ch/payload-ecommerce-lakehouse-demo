@@ -2,9 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import jwt from 'jsonwebtoken'
 import invariant from 'tiny-invariant'
 
-const METABASE_EMBEDDING_SECRET_KEY = process.env.METABASE_EMBEDDING_SECRET_KEY
-const METABASE_INSTANCE_URL = process.env.NEXT_PUBLIC_METABASE_URL
-
 interface EmbedPayload {
   resource: { dashboard?: number; question?: number }
   params: Record<string, unknown>
@@ -12,7 +9,10 @@ interface EmbedPayload {
 }
 
 export async function GET(request: NextRequest) {
+  const METABASE_EMBEDDING_SECRET_KEY = process.env.METABASE_EMBEDDING_SECRET_KEY
   invariant(METABASE_EMBEDDING_SECRET_KEY, 'METABASE_EMBEDDING_SECRET_KEY is not set')
+
+  const METABASE_INSTANCE_URL = process.env.NEXT_PUBLIC_METABASE_URL
   invariant(METABASE_INSTANCE_URL, 'NEXT_PUBLIC_METABASE_URL is not set')
 
   const searchParams = request.nextUrl.searchParams
@@ -28,7 +28,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid id parameter' }, { status: 400 })
   }
 
-  // Build the payload for static embedding
   const payload: EmbedPayload = {
     resource: type === 'question' ? { question: resourceId } : { dashboard: resourceId },
     params: {},
