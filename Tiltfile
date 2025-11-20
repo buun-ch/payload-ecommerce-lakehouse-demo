@@ -2,15 +2,6 @@
 # https://docs.tilt.dev/
 #
 # Tilt configuration for Payload Ecommerce Lakehouse Demo
-#
-# Usage:
-#   tilt up                                    # Basic development
-#   tilt up -- --port-forward                  # Enable port forwarding (localhost:13000)
-#   tilt up -- --ai-external-secret            # Enable AI External Secret (Vault integration)
-#   tilt up -- --enable-health-logs            # Enable health check request logs
-#   tilt up -- --extra-values-file=custom.yaml # Use additional Helm values file
-#
-# For AI External Secret setup, see: docs/ai-external-secret.md
 
 allow_k8s_contexts(k8s_context())
 
@@ -18,23 +9,37 @@ config.define_string('registry')
 config.define_bool('port-forward')
 config.define_string('extra-values-file')
 config.define_bool('enable-health-logs')
-config.define_bool('ai-external-secret')
+config.define_bool('ai-assistant')
 config.define_bool('metabase-embedding')
+config.define_bool('prod-image')
 
 cfg = config.parse()
 
 registry = cfg.get('registry', 'localhost:30500')
 default_registry(registry)
 
-docker_build(
-    'payload-ecommerce-lakehouse-demo-dev',
-    '.',
-    dockerfile='Dockerfile.dev',
-    live_update=[
-        sync('.', '/app'),
-        run('pnpm install', trigger=['./package.json', './pnpm-lock.yaml']),
-    ]
-)
+use_prod_image = cfg.get('prod-image', False)
+
+if use_prod_image:
+    # Production image build (uses experimental build mode)
+    docker_build(
+        'payload-ecommerce-lakehouse-demo-dev',
+        '.',
+        dockerfile='Dockerfile',
+    )
+    print("🏗️  Using production Dockerfile with experimental build mode")
+else:
+    # Development image build (hot reload enabled)
+    docker_build(
+        'payload-ecommerce-lakehouse-demo-dev',
+        '.',
+        dockerfile='Dockerfile.dev',
+        live_update=[
+            sync('.', '/app'),
+            run('pnpm install', trigger=['./package.json', './pnpm-lock.yaml']),
+        ]
+    )
+    print("🔥 Using development Dockerfile with live reload")
 
 values_files = ['./charts/payload-ecommerce-lakehouse-demo/values-dev.yaml']
 extra_values_file = cfg.get('extra-values-file', '')
@@ -48,8 +53,8 @@ if enable_health_logs:
     helm_set_values.append('logging.health_request=true')
     print("📵 Health check request logs enabled")
 
-use_ai_external_secret = cfg.get('ai-external-secret', False)
-if use_ai_external_secret:
+ai_assistant = cfg.get('ai-assistant', False)
+if ai_assistant:
     k8s_yaml('./manifests/ai-env-external-secret.yaml')
     helm_set_values.append('extraEnvVarsSecret=ai-env-secret')
     helm_set_values.append('aiAssistant.enabled=true')

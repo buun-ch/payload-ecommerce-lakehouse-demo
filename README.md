@@ -90,6 +90,54 @@ Built with [Payload CMS ecommerce template](./README-payload.md):
   - Conditional formatting for operational alerts
 - See: [docs/analysis_queries.md](./docs/analysis_queries.md)
 
+### 🤖 AI Assistant (Optional)
+
+An **optional AI-powered chat assistant** can be embedded in the ecommerce storefront to help customers with product discovery, order tracking, and general inquiries.
+
+**Key Features:**
+
+- Real-time conversational interface powered by Anthropic Claude
+- Context-aware responses using product catalog and order data
+- Streaming responses for improved user experience
+- Kubernetes-native deployment with secure credential management
+
+**Enabling the AI Assistant:**
+
+The AI assistant is **disabled by default**. To enable it in your Kubernetes environment:
+
+**Prerequisites:**
+
+1. **Vault Secret**: Store your Anthropic API key in Vault at:
+   ```
+   ecommerce/anthropic
+   ```
+   with the key `api_key`
+
+2. **ExternalSecret**: The deployment uses ExternalSecret to fetch the API key from Vault
+
+**Deployment:**
+
+```bash
+# Start with AI assistant enabled
+tilt up -- --ai-assistant
+```
+
+This flag:
+- Passes `--set aiAssistant.enabled=true` to Helm
+- Creates an ExternalSecret to fetch `ANTHROPIC_API_KEY` from Vault
+- Enables the AI assistant UI component in the frontend
+
+**Implementation Details:**
+
+- **Frontend**: `src/components/AIAssistant/` - Chat UI component with streaming support
+- **Backend**: `src/app/(app)/api/chat/route.ts` - Anthropic SDK integration with streaming responses
+- **Infrastructure**:
+  - Helm chart: `charts/payload-ecommerce-lakehouse-demo/templates/externalsecret.yaml`
+  - Feature flag: `aiAssistant.enabled` in `values.yaml`
+- **Tech Stack**: Anthropic SDK, Server-Sent Events (SSE) for streaming
+
+The assistant can be extended to access Payload CMS collections for product recommendations, inventory checks, and order status lookups.
+
 ## Getting Started
 
 ### Prerequisites
@@ -247,6 +295,96 @@ Built with [Payload CMS ecommerce template](./README-payload.md):
    ```
 
    More sample queries in [docs/analysis_queries.md](./docs/analysis_queries.md)
+
+## Docker Build
+
+This project uses Next.js experimental build modes to enable building Docker images without requiring a database connection during the build phase.
+
+### Problem
+
+By default, Next.js Static Site Generation (SSG) attempts to generate static pages during `next build`, which requires database connectivity. In Docker builds, the database is typically unavailable during the build phase, causing builds to fail with connection errors.
+
+See: [Payload CMS: Building without a DB connection](https://payloadcms.com/docs/production/building-without-a-db-connection)
+
+### Solution: Two-Phase Build
+
+The project implements a two-phase build strategy using Next.js experimental build modes:
+
+#### Phase 1: Compile (Build Time)
+```bash
+pnpm run build:compile
+# Equivalent to: next build --experimental-build-mode compile
+```
+
+- Compiles TypeScript and prepares the application
+- **Does not** require database connection
+- **Does not** generate static pages
+- Used in `Dockerfile` build stage
+
+#### Phase 2: Generate (Runtime)
+```bash
+pnpm run build:generate
+# Equivalent to: next build --experimental-build-mode generate
+```
+
+- Generates static pages from compiled code
+- **Requires** database connection
+- Executed at container startup via `docker-entrypoint.sh`
+- Only runs once (skipped on subsequent restarts if `.next/BUILD_ID` exists)
+
+### Implementation
+
+**Dockerfile:**
+```dockerfile
+# Build stage - no database required
+RUN corepack enable pnpm && pnpm run build:compile
+```
+
+**docker-entrypoint.sh:**
+```bash
+# Runtime - database available
+if [ ! -f .next/BUILD_ID ]; then
+  next build --experimental-build-mode generate
+fi
+exec node server.js
+```
+
+### Benefits
+
+✅ **Build Time**: No database dependency, Docker builds succeed in CI/CD pipelines
+✅ **Runtime**: Full static page generation with database access
+✅ **Performance**: Static pages cached after first generation
+✅ **Flexibility**: ISR (Incremental Static Regeneration) works normally
+
+### Development vs Production
+
+**Development** (`Dockerfile.dev`):
+- Uses `pnpm dev` for hot reload
+- No build phase required
+- Database connection needed at runtime only
+
+**Production** (`Dockerfile`):
+- Two-phase build with experimental modes
+- Optimized standalone output
+- Static pages generated on first startup
+
+### Tilt Configuration
+
+The Tiltfile supports both development and production builds:
+
+```bash
+# Development mode (default) - hot reload with live_update
+tilt up
+
+# Production mode - test production build locally
+tilt up -- --prod-image=true
+```
+
+### References
+
+- [Payload CMS: Building without a DB connection](https://payloadcms.com/docs/production/building-without-a-db-connection)
+- [Railway Community: PayloadCMS requires database access at build](https://station.railway.com/questions/payload-cms-requires-database-access-at-b-c1f28386)
+- [Next.js Experimental Build Modes](https://nextjs.org/docs/app/api-reference/cli/next#build)
 
 ## Project Structure
 

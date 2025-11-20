@@ -6,6 +6,8 @@
   "type": "module",
   "scripts": {
     "build": "cross-env NODE_OPTIONS=\"--no-deprecation --max-old-space-size=8000\" next build",
+    "build:compile": "cross-env NODE_OPTIONS=\"--no-deprecation --max-old-space-size=8000\" next build --experimental-build-mode compile",
+    "build:generate": "cross-env NODE_OPTIONS=\"--no-deprecation --max-old-space-size=8000\" next build --experimental-build-mode generate",
     "dev": "cross-env NODE_OPTIONS=--no-deprecation next dev",
     "dev:prod": "cross-env NODE_OPTIONS=--no-deprecation rm -rf .next && pnpm build && pnpm start",
     "generate:importmap": "cross-env NODE_OPTIONS=--no-deprecation payload generate:importmap",
