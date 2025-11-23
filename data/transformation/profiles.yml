@@ -14,11 +14,11 @@ payload_ecommerce:
     dev:
       type: trino
       method: oauth  # OAuth2 for HTTPS (user is determined by OAuth token)
-      host: trino.buun.dev
-      port: 443
-      http_scheme: https
+      host: "{{ env_var('TRINO_HOST', 'trino.example.com') }}"
+      port: "{{ env_var('TRINO_PORT', '443') | int }}"
+      http_scheme: "{{ env_var('TRINO_HTTP_SCHEME', 'https') }}"
       cert: True  # Enable SSL certificate verification (uses system CA bundle)
-      catalog: iceberg  # Iceberg catalog name in Trino
+      catalog: "{{ env_var('ICEBERG_CATALOG', 'iceberg') }}"  # Iceberg catalog name in Trino
       schema: ecommerce_dev  # Development schema
       threads: 4
 
@@ -27,11 +27,11 @@ payload_ecommerce:
     prod:
       type: trino
       method: oauth  # OAuth2 for HTTPS (user is determined by OAuth token)
-      host: trino.buun.dev
-      port: 443
-      http_scheme: https
+      host: "{{ env_var('TRINO_HOST', 'trino.example.com') }}"
+      port: "{{ env_var('TRINO_PORT', '443') | int }}"
+      http_scheme: "{{ env_var('TRINO_HTTP_SCHEME', 'https') }}"
       cert: True  # Enable SSL certificate verification (uses system CA bundle)
-      catalog: iceberg  # Iceberg catalog name in Trino
+      catalog: "{{ env_var('ICEBERG_CATALOG', 'iceberg') }}"  # Iceberg catalog name in Trino
       schema: ecommerce  # Production schema
       threads: 8
 

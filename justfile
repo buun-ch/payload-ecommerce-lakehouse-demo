@@ -23,7 +23,7 @@ trino user="":
     TRINO_HOST="${TRINO_HOST}"
     while [ -z "${TRINO_HOST}" ]; do
         TRINO_HOST=$(gum input --prompt="Trino host (FQDN): " --width=100 \
-            --placeholder="e.g., trino.buun.dev")
+            --placeholder="e.g., trino.example.com")
     done
     TRINO_USER="{{ user }}"
     if [ -z "${TRINO_USER}" ]; then

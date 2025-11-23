@@ -99,7 +99,7 @@ extraEnvVarsCM: "payload-config"
 
 ```bash
 kubectl create configmap payload-config \
-  --from-literal=LANGFUSE_BASEURL="https://langfuse.buun.dev" \
+  --from-literal=LANGFUSE_BASEURL="https://langfuse.example.com" \
   --from-literal=TRINO_SERVER="trino.example.com:8080" \
   --from-literal=ICEBERG_CATALOG="iceberg" \
   -n your-namespace
@@ -140,7 +140,7 @@ kubectl create secret generic payload-ai-secrets \
 
 ```bash
 kubectl create configmap payload-ai-config \
-  --from-literal=LANGFUSE_BASEURL="https://langfuse.buun.dev" \
+  --from-literal=LANGFUSE_BASEURL="https://langfuse.example.com" \
   --from-literal=TRINO_SERVER="trino-coordinator.analytics:8080" \
   --from-literal=TRINO_USER="trino" \
   --from-literal=ICEBERG_CATALOG="iceberg" \
