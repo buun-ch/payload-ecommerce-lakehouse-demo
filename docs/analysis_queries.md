@@ -227,18 +227,17 @@ ORDER BY total_revenue_usd DESC;
 
 **Superset Visualization**:
 
-- **Chart Type**: Treemap, Sunburst Chart, or Pie Chart
-- **Treemap Configuration** (Recommended):
+- **Chart Type**: Sunburst Chart, Pie Chart or Treemap
+- **Sunburst chart Configuration**:
+    - Hierarchy: `category_name`
+    - Primary metric: `total_revenue_usd`
+- **Pie chart Configuration**:
+    - Dimension: `category_name`
+    - Metric: `total_revenue_usdor clarity
+- **Treemap Configuration**
     - Dimension: `category_name`
     - Metric: `total_revenue_usd`
-    - Show both percentage and absolute values
-- **Sunburst Configuration**:
-    - Great for hierarchical category structures
-    - Interactive drill-down capability
-- **Pie/Donut Configuration**:
-    - Dimension: `category_name`
-    - Metric: `total_revenue_usd`
-    - Limit to top 10 categories for clarity
+    - Show both percentage and absolute value
 
 ### 2.3 Inventory Alert - Low Stock Products
 
@@ -503,7 +502,8 @@ cohort_orders AS (
         DATE_FORMAT(fp.first_order_date, '%Y-%m') AS cohort_month,
         o.customer_id,
         CAST(o.order_date AS DATE) AS order_date,
-        DATE_DIFF('month', fp.first_order_date, CAST(o.order_date AS DATE)) AS months_since_first
+        DATE_DIFF('month', fp.first_order_date, CAST(o.order_date AS DATE))
+          AS months_since_first
     FROM first_purchase fp
     JOIN ecommerce_marts.fact_orders o
         ON fp.customer_id = o.customer_id
@@ -820,17 +820,17 @@ FROM current_period cp, previous_period pp;
 
 ### Customer Analytics Dashboard
 
-- **Segment Distribution**: Customer segmentation (Query 3.1) - Pie Chart + Bar Chart combo
-- **VIP Customers**: Top 20 by LTV (Query 3.2) - Table with highlights
+- **Segment Distribution**: Customer segmentation (Query 3.1) - Mixed Chart
+- **Top Customers**: Top 20 customers by lifetime value (Query 3.2) - Table
 - **Customer Behavior**: RFM analysis (Query 5.2) - Bubble Chart
 - **Retention**: Cohort analysis (Query 5.1) - Heatmap
 
 ### Operations Dashboard
 
 - **Daily Trends**: Daily sales trend (Query 1.1) - Line Chart with area fill
-- **Payment Health**: Payment success rate (Query 4.1) - Donut Chart + Big Number KPI
-- **Transaction Monitoring**: Transaction volume (Query 4.2) - Mixed Chart (stacked)
-- **Pattern Analysis**: Weekend vs weekday (Query 1.3) - Bar Chart comparison
+- **Pattern Analysis**: Weekend vs weekday (Query 1.3) - Pie Chart
+- **Payment Health**: Payment success rate (Query 4.1) - Pie Chart
+- **Transaction Monitoring**: Transaction volume (Query 4.2) - Line Chart
 
 ## Tips for Superset Visualization
 
