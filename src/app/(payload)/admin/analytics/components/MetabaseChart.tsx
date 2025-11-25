@@ -15,7 +15,7 @@ export default function MetabaseChart({ questionId, height = '400px' }: Metabase
   useEffect(() => {
     const fetchEmbedUrl = async () => {
       try {
-        const response = await fetch(`/api/metabase-sso?type=question&id=${questionId}`)
+        const response = await fetch(`/api/metabase-auth?type=question&id=${questionId}`)
         if (!response.ok) {
           throw new Error('Failed to fetch embed URL')
         }

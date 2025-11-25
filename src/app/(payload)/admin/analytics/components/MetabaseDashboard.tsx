@@ -18,7 +18,7 @@ export default function MetabaseDashboard({
   useEffect(() => {
     const fetchEmbedUrl = async () => {
       try {
-        const response = await fetch(`/api/metabase-sso?type=dashboard&id=${dashboardId}`)
+        const response = await fetch(`/api/metabase-auth?type=dashboard&id=${dashboardId}`)
         if (!response.ok) {
           throw new Error('Failed to fetch embed URL')
         }
