@@ -49,7 +49,6 @@ export default function MetabaseDashboard({
   return (
     <iframe
       src={embedUrl}
-      frameBorder="0"
       width="100%"
       height={height}
       // @ts-expect-error - React requires lowercase for custom DOM attributes
