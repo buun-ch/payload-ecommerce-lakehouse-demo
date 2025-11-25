@@ -19,7 +19,6 @@ export default function AnalyticsPage() {
 
       {dashboardId && (
         <section className="analytics-page__section">
-          <h2>Ecommerce Overview</h2>
           <div className="analytics-page__dashboard-container">
             <MetabaseDashboard dashboardId={dashboardId} />
           </div>
@@ -28,11 +27,9 @@ export default function AnalyticsPage() {
 
       {chartIds.length > 0 && (
         <section className="analytics-page__section">
-          <h2>Individual Charts</h2>
           <div className="analytics-page__grid">
             {chartIds.map((chartId) => (
               <div key={chartId} className="analytics-page__card">
-                <h3>Chart {chartId}</h3>
                 <MetabaseChart questionId={chartId} height="300px" />
               </div>
             ))}
